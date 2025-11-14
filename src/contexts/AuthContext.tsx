@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithSSO: (provider: 'google' | 'github' | 'azure' | 'microsoft') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -99,6 +100,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider === 'microsoft' ? 'azure' : provider,
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'SSO sign in failed' };
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -110,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithSSO, signOut }}>
       {children}
     </AuthContext.Provider>
   );
