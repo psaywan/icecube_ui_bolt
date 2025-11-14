@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Plus, Database, AlertCircle } from 'lucide-react';
+import { Plus, Database, AlertCircle, CheckCircle, Trash2, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import DataSourceCard from './DataSourceCard';
 import AddDataSourceModal from './AddDataSourceModal';
-import AddFileToSourceModal from './AddFileToSourceModal';
+import DataSourceDetailView from './DataSourceDetailView';
 
 export default function DataSourcesTab() {
   const [dataSources, setDataSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAddFileModal, setShowAddFileModal] = useState(false);
   const [selectedDataSource, setSelectedDataSource] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -111,74 +110,14 @@ export default function DataSourcesTab() {
     }
   };
 
-  const handleAddFileToSource = (id: string) => {
-    const dataSource = dataSources.find(ds => ds.id === id);
-    if (dataSource) {
-      setSelectedDataSource(dataSource);
-      setShowAddFileModal(true);
-    }
+  const handleViewDataSource = (dataSource: any) => {
+    setSelectedDataSource(dataSource);
+    setViewMode('detail');
   };
 
-  const handleAddFile = async (file: File, tableName: string) => {
-    if (!selectedDataSource) return;
-
-    try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-
-      if (lines.length === 0) {
-        throw new Error('File is empty');
-      }
-
-      const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
-
-      const rows = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
-        const row: any = {};
-        headers.forEach((header, idx) => {
-          row[header] = values[idx] || null;
-        });
-        return row;
-      });
-
-      const inferType = (values: any[]): string => {
-        const sample = values.filter(v => v !== null && v !== '').slice(0, 100);
-        if (sample.length === 0) return 'varchar';
-
-        const allNumbers = sample.every(v => !isNaN(Number(v)));
-        if (allNumbers) {
-          const allIntegers = sample.every(v => Number.isInteger(Number(v)));
-          return allIntegers ? 'integer' : 'decimal';
-        }
-
-        const allDates = sample.every(v => !isNaN(Date.parse(v)));
-        if (allDates) return 'date';
-
-        return 'varchar';
-      };
-
-      const catalogEntries = headers.map((col, idx) => ({
-        data_source_id: selectedDataSource.id,
-        database_name: 'default',
-        table_name: tableName,
-        column_name: col,
-        data_type: inferType(rows.map(r => r[col])),
-        is_nullable: true,
-        column_order: idx + 1,
-      }));
-
-      const { error: catalogError } = await supabase
-        .from('catalog_metadata')
-        .insert(catalogEntries);
-
-      if (catalogError) throw catalogError;
-
-      alert(`File added successfully! Table: ${tableName}`);
-      setShowAddFileModal(false);
-      setSelectedDataSource(null);
-    } catch (err: any) {
-      throw new Error(err.message || 'Failed to add file');
-    }
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedDataSource(null);
   };
 
   if (loading) {
@@ -186,6 +125,16 @@ export default function DataSourcesTab() {
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
       </div>
+    );
+  }
+
+  if (viewMode === 'detail' && selectedDataSource) {
+    return (
+      <DataSourceDetailView
+        dataSource={selectedDataSource}
+        onBack={handleBackToList}
+        onRefresh={fetchDataSources}
+      />
     );
   }
 
@@ -228,15 +177,77 @@ export default function DataSourcesTab() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {dataSources.map((dataSource) => (
-            <DataSourceCard
+        <div className="bg-white rounded-lg border border-gray-200">
+          {dataSources.map((dataSource, idx) => (
+            <div
               key={dataSource.id}
-              dataSource={dataSource}
-              onDelete={handleDeleteDataSource}
-              onTest={handleTestDataSource}
-              onAddFile={handleAddFileToSource}
-            />
+              className={`${idx !== 0 ? 'border-t border-gray-200' : ''}`}
+            >
+              <div className="p-6 hover:bg-gray-50 transition cursor-pointer">
+                <div className="flex items-start justify-between">
+                  <div
+                    className="flex-1 flex items-start gap-4"
+                    onClick={() => handleViewDataSource(dataSource)}
+                  >
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Database className="w-6 h-6 text-cyan-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">{dataSource.name}</h3>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded uppercase">
+                          {dataSource.type}
+                        </span>
+                        {dataSource.status === 'active' && (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {dataSource.description || dataSource.config?.filename || 'No description'}
+                      </p>
+                      {(dataSource.type === 'csv' || dataSource.type === 'excel') && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDataSource(dataSource);
+                          }}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 border border-cyan-300 text-cyan-600 hover:bg-cyan-50 rounded-lg transition text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add More Files
+                        </button>
+                      )}
+                      {dataSource.last_tested && (
+                        <p className="text-xs text-gray-400 mt-2">
+                          Last tested: {new Date(dataSource.last_tested).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTestDataSource(dataSource.id);
+                      }}
+                      className="px-3 py-1.5 text-sm text-cyan-600 hover:bg-cyan-50 rounded-lg transition"
+                    >
+                      Test
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDataSource(dataSource.id);
+                      }}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -245,17 +256,6 @@ export default function DataSourcesTab() {
         <AddDataSourceModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddDataSource}
-        />
-      )}
-
-      {showAddFileModal && selectedDataSource && (
-        <AddFileToSourceModal
-          dataSource={selectedDataSource}
-          onClose={() => {
-            setShowAddFileModal(false);
-            setSelectedDataSource(null);
-          }}
-          onAdd={handleAddFile}
         />
       )}
     </div>
