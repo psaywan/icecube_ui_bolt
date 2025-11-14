@@ -41,6 +41,7 @@ export function CloudProfilesTab() {
     cloud_provider: 'aws' | 'azure' | 'gcp';
     region: string;
     credentials: Record<string, string>;
+    category?: string;
   }) => {
     if (!user) return;
 
@@ -49,9 +50,9 @@ export function CloudProfilesTab() {
       .insert({
         user_id: user.id,
         name: data.name,
-        cloud_provider: data.cloud_provider,
+        provider: data.cloud_provider,
         region: data.region,
-        credentials_encrypted: data.credentials,
+        category: data.category || 'General',
         status: 'inactive',
       });
 

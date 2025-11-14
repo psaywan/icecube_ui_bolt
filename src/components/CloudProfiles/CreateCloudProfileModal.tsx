@@ -8,6 +8,7 @@ interface CreateCloudProfileModalProps {
     cloud_provider: 'aws' | 'azure' | 'gcp';
     region: string;
     credentials: Record<string, string>;
+    category?: string;
   }) => Promise<void>;
   onAWSSetup?: () => void;
 }
@@ -45,10 +46,23 @@ const cloudFormationTemplates = {
   gcp: 'https://console.cloud.google.com/dm/deployments',
 };
 
+const CATEGORIES = [
+  { name: 'Development', color: '#3b82f6', icon: '🔧' },
+  { name: 'Production', color: '#ef4444', icon: '🚀' },
+  { name: 'Data Science', color: '#8b5cf6', icon: '📊' },
+  { name: 'Machine Learning', color: '#ec4899', icon: '🤖' },
+  { name: 'ETL/ELT', color: '#14b8a6', icon: '🔄' },
+  { name: 'Analytics', color: '#f59e0b', icon: '📈' },
+  { name: 'Research', color: '#06b6d4', icon: '🔬' },
+  { name: 'Shared', color: '#10b981', icon: '👥' },
+  { name: 'General', color: '#6b7280', icon: '📁' },
+];
+
 export function CreateCloudProfileModal({ onClose, onSubmit, onAWSSetup }: CreateCloudProfileModalProps) {
   const [name, setName] = useState('');
   const [provider, setProvider] = useState<'aws' | 'azure' | 'gcp'>('aws');
   const [region, setRegion] = useState(regions.aws[0]);
+  const [category, setCategory] = useState('General');
   const [credentials, setCredentials] = useState({
     accessKeyId: '',
     secretAccessKey: '',
@@ -75,6 +89,7 @@ export function CreateCloudProfileModal({ onClose, onSubmit, onAWSSetup }: Creat
         cloud_provider: provider,
         region,
         credentials,
+        category,
       });
       onClose();
     } catch (error) {
@@ -156,6 +171,33 @@ export function CreateCloudProfileModal({ onClose, onSubmit, onAWSSetup }: Creat
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Category</label>
+            <div className="grid grid-cols-3 gap-3">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.name}
+                  type="button"
+                  onClick={() => setCategory(cat.name)}
+                  className={`p-3 border-2 rounded-lg transition text-left ${
+                    category === cat.name
+                      ? 'border-cyan-500 bg-cyan-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">{cat.icon}</span>
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">{cat.name}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {provider === 'aws' && onAWSSetup ? (
