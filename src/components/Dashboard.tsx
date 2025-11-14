@@ -10,6 +10,7 @@ import { JobsTab } from './Jobs/JobsTab';
 import { PipelinesTab } from './Pipelines/PipelinesTab';
 import { MonitoringTab } from './Monitoring/MonitoringTab';
 import { QueryEditorTab } from './Query/QueryEditorTab';
+import { SavedQueriesTab } from './Query/SavedQueriesTab';
 import DataSourcesTab from './DataSources/DataSourcesTab';
 
 function PlaceholderTab({ title, description }: { title: string; description: string }) {
@@ -51,7 +52,7 @@ export function Dashboard() {
       case 'query-results':
         return <PlaceholderTab title="Query Results" description="View your query execution results" />;
       case 'query-stored':
-        return <PlaceholderTab title="Stored Queries" description="Access your saved queries" />;
+        return <SavedQueriesTab />;
 
       case 'notebooks':
         return <NotebooksTab />;
