@@ -2,16 +2,31 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
+interface Account {
+  id: string;
+  account_id: string;
+  account_name: string;
+  account_type: 'individual' | 'organization';
+}
+
+interface AccountMember {
+  role: 'owner' | 'admin' | 'member';
+}
+
 interface Profile {
   id: string;
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  account_id: string | null;
+  is_parent_account: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  account: Account | null;
+  accountRole: string | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -24,6 +39,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [accountRole, setAccountRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
+        setAccount(null);
+        setAccountRole(null);
         setLoading(false);
       }
     });
@@ -53,14 +72,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      if (error) throw error;
-      setProfile(data);
+      if (profileError) throw profileError;
+      setProfile(profileData);
+
+      if (profileData?.account_id) {
+        const { data: accountData, error: accountError } = await supabase
+          .from('accounts')
+          .select('*')
+          .eq('id', profileData.account_id)
+          .maybeSingle();
+
+        if (accountError) throw accountError;
+        setAccount(accountData);
+
+        const { data: memberData, error: memberError } = await supabase
+          .from('account_members')
+          .select('role')
+          .eq('account_id', profileData.account_id)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (memberError) throw memberError;
+        setAccountRole(memberData?.role || null);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -138,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signInWithSSO, signOut }}>
+    <AuthContext.Provider value={{ user, profile, account, accountRole, loading, signUp, signIn, signInWithSSO, signOut }}>
       {children}
     </AuthContext.Provider>
   );
