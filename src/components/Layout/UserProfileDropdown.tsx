@@ -59,8 +59,8 @@ export function UserProfileDropdown() {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3 mb-3">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold">
                 {initials}
               </div>
@@ -71,20 +71,20 @@ export function UserProfileDropdown() {
             </div>
 
             {account && (
-              <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-800">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-5 h-5 rounded bg-cyan-600 dark:bg-cyan-500 flex items-center justify-center">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
                     <span className="text-white text-xs font-bold">ID</span>
                   </div>
-                  <span className="text-xs font-semibold text-cyan-900 dark:text-cyan-100">iceCube Account ID</span>
+                  <span className="text-sm font-bold text-blue-900 dark:text-blue-100">iceCube Account ID</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 text-cyan-700 dark:text-cyan-300 rounded font-mono text-sm border border-cyan-300 dark:border-cyan-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <code className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 rounded-md font-mono text-base font-semibold border border-blue-300 dark:border-blue-700 shadow-sm">
                     {account.account_id}
                   </code>
                   <button
                     onClick={handleCopyAccountId}
-                    className="px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded font-medium text-sm flex items-center gap-2 transition-colors"
+                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
                   >
                     {copied ? (
                       <>
@@ -99,7 +99,7 @@ export function UserProfileDropdown() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-2 flex items-start gap-1">
+                <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
                   <span>💡</span>
                   <span>Use this unique ID for Cloud Profile setup and cloud integrations</span>
                 </p>
