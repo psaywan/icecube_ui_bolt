@@ -1,16 +1,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
-interface User {
-  icecube_id: string;
-  username: string;
+interface Profile {
+  id: string;
   email: string;
-  full_name?: string;
-  is_verified: boolean;
+  full_name: string | null;
+  avatar_url: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -22,93 +23,122 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      api.auth.getUser()
-        .then((response) => {
-          setUser(response.data);
-          setLoading(false);
-        })
-        .catch(() => {
-          localStorage.removeItem('auth_token');
-          setLoading(false);
-        });
-    } else {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const response = await api.auth.signUp(email, email, password, fullName);
-      const responseData = response.data;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
 
-      if (responseData.message && responseData.user) {
-        const tempToken = 'temp_signup_token';
-        localStorage.setItem('auth_token', tempToken);
-        setUser({
-          icecube_id: responseData.user.icecube_id,
-          username: responseData.user.username,
-          email: responseData.user.email,
-          full_name: responseData.user.full_name,
-          is_verified: responseData.user.is_verified
-        });
+      if (error) throw error;
+
+      if (data.user) {
         return { error: null };
       }
 
-      return { error: 'Unexpected response format' };
+      return { error: 'Sign up failed' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Sign up failed';
-      return { error: errorMessage };
+      return { error: error.message || 'Sign up failed' };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await api.auth.signIn(email, password);
-      const { access_token, user: userData } = response.data;
-
-      localStorage.setItem('auth_token', access_token);
-      setUser({
-        icecube_id: userData.icecube_id,
-        username: userData.username,
-        email: userData.email,
-        full_name: userData.full_name,
-        is_verified: userData.is_verified
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      return { error: null };
+      if (error) throw error;
+
+      if (data.user) {
+        return { error: null };
+      }
+
+      return { error: 'Sign in failed' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Sign in failed';
-      return { error: errorMessage };
+      return { error: error.message || 'Sign in failed' };
     }
   };
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
     try {
-      return { error: 'SSO is not available with the current backend configuration. Please use email/password authentication.' };
+      const mappedProvider = provider === 'microsoft' ? 'azure' : provider;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: mappedProvider as 'google' | 'github' | 'azure',
+        options: {
+          redirectTo: `${window.location.origin}`,
+        },
+      });
+
+      if (error) throw error;
+
+      return { error: null };
     } catch (error: any) {
-      console.error('SSO Error:', error);
       return { error: error.message || 'SSO sign in failed' };
     }
   };
 
   const signOut = async () => {
     try {
-      await api.auth.signOut();
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Sign out error:', error);
-    } finally {
-      localStorage.removeItem('auth_token');
-      setUser(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithSSO, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signInWithSSO, signOut }}>
       {children}
     </AuthContext.Provider>
   );
