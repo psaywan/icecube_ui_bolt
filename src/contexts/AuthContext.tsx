@@ -102,10 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
     try {
+      const redirectUrl = `${window.location.origin}/`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider === 'microsoft' ? 'azure' : provider,
         options: {
-          redirectTo: window.location.origin
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false
         }
       });
 
@@ -113,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return { error: null };
     } catch (error: any) {
+      console.error('SSO Error:', error);
       return { error: error.message || 'SSO sign in failed' };
     }
   };
