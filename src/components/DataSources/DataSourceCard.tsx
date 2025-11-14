@@ -1,4 +1,4 @@
-import { Database, Trash2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Database, Trash2, CheckCircle, XCircle, Clock, Plus } from 'lucide-react';
 
 interface DataSourceCardProps {
   dataSource: {
@@ -12,6 +12,7 @@ interface DataSourceCardProps {
   };
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
+  onAddFile?: (id: string) => void;
 }
 
 const DATA_SOURCE_ICONS: Record<string, string> = {
@@ -44,7 +45,7 @@ const DATA_SOURCE_NAMES: Record<string, string> = {
   bigquery: 'Google BigQuery',
 };
 
-export default function DataSourceCard({ dataSource, onDelete, onTest }: DataSourceCardProps) {
+export default function DataSourceCard({ dataSource, onDelete, onTest, onAddFile }: DataSourceCardProps) {
   const getStatusIcon = () => {
     switch (dataSource.status) {
       case 'active':
@@ -88,7 +89,7 @@ export default function DataSourceCard({ dataSource, onDelete, onTest }: DataSou
         <p className="text-sm text-gray-600 mb-4">{dataSource.description}</p>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-3">
         <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor()}`}>
           {dataSource.status}
         </span>
@@ -108,6 +109,16 @@ export default function DataSourceCard({ dataSource, onDelete, onTest }: DataSou
           </button>
         </div>
       </div>
+
+      {(dataSource.type === 'csv' || dataSource.type === 'excel') && onAddFile && (
+        <button
+          onClick={() => onAddFile(dataSource.id)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-cyan-300 text-cyan-600 hover:bg-cyan-50 rounded-lg transition text-sm font-medium"
+        >
+          <Plus className="w-4 h-4" />
+          Add More Files
+        </button>
+      )}
 
       {dataSource.last_tested && (
         <p className="text-xs text-gray-400 mt-3">

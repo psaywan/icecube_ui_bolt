@@ -3,11 +3,14 @@ import { Plus, Database, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import DataSourceCard from './DataSourceCard';
 import AddDataSourceModal from './AddDataSourceModal';
+import AddFileToSourceModal from './AddFileToSourceModal';
 
 export default function DataSourcesTab() {
   const [dataSources, setDataSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddFileModal, setShowAddFileModal] = useState(false);
+  const [selectedDataSource, setSelectedDataSource] = useState<any>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -108,6 +111,76 @@ export default function DataSourcesTab() {
     }
   };
 
+  const handleAddFileToSource = (id: string) => {
+    const dataSource = dataSources.find(ds => ds.id === id);
+    if (dataSource) {
+      setSelectedDataSource(dataSource);
+      setShowAddFileModal(true);
+    }
+  };
+
+  const handleAddFile = async (file: File, tableName: string) => {
+    if (!selectedDataSource) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+
+      if (lines.length === 0) {
+        throw new Error('File is empty');
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/['"]/g, ''));
+
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+        const row: any = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx] || null;
+        });
+        return row;
+      });
+
+      const inferType = (values: any[]): string => {
+        const sample = values.filter(v => v !== null && v !== '').slice(0, 100);
+        if (sample.length === 0) return 'varchar';
+
+        const allNumbers = sample.every(v => !isNaN(Number(v)));
+        if (allNumbers) {
+          const allIntegers = sample.every(v => Number.isInteger(Number(v)));
+          return allIntegers ? 'integer' : 'decimal';
+        }
+
+        const allDates = sample.every(v => !isNaN(Date.parse(v)));
+        if (allDates) return 'date';
+
+        return 'varchar';
+      };
+
+      const catalogEntries = headers.map((col, idx) => ({
+        data_source_id: selectedDataSource.id,
+        database_name: 'default',
+        table_name: tableName,
+        column_name: col,
+        data_type: inferType(rows.map(r => r[col])),
+        is_nullable: true,
+        column_order: idx + 1,
+      }));
+
+      const { error: catalogError } = await supabase
+        .from('catalog_metadata')
+        .insert(catalogEntries);
+
+      if (catalogError) throw catalogError;
+
+      alert(`File added successfully! Table: ${tableName}`);
+      setShowAddFileModal(false);
+      setSelectedDataSource(null);
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to add file');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -162,6 +235,7 @@ export default function DataSourcesTab() {
               dataSource={dataSource}
               onDelete={handleDeleteDataSource}
               onTest={handleTestDataSource}
+              onAddFile={handleAddFileToSource}
             />
           ))}
         </div>
@@ -171,6 +245,17 @@ export default function DataSourcesTab() {
         <AddDataSourceModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddDataSource}
+        />
+      )}
+
+      {showAddFileModal && selectedDataSource && (
+        <AddFileToSourceModal
+          dataSource={selectedDataSource}
+          onClose={() => {
+            setShowAddFileModal(false);
+            setSelectedDataSource(null);
+          }}
+          onAdd={handleAddFile}
         />
       )}
     </div>
