@@ -1,16 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { authApi, setAuthToken, getAuthToken, type AuthUser } from '../lib/auth-api';
 
 interface Account {
   id: string;
   account_id: string;
   account_name: string;
   account_type: 'individual' | 'organization';
-}
-
-interface AccountMember {
-  role: 'owner' | 'admin' | 'member';
 }
 
 interface Profile {
@@ -23,7 +19,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   profile: Profile | null;
   account: Account | null;
   accountRole: string | null;
@@ -37,38 +33,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [accountRole, setAccountRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setAccount(null);
-        setAccountRole(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    initAuth();
   }, []);
+
+  const initAuth = async () => {
+    const token = getAuthToken();
+    if (token) {
+      try {
+        const userData = await authApi.getUser(token);
+        setUser(userData);
+        await fetchProfile(userData.id);
+      } catch (error) {
+        console.error('Error restoring session:', error);
+        setAuthToken(null);
+      }
+    }
+    setLoading(false);
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -103,77 +91,99 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
+      const response = await authApi.signUp(email, password, fullName);
+      setAuthToken(response.token);
+      setUser(response.user);
 
-      if (error) throw error;
+      await createProfileAndAccount(response.user);
+      await fetchProfile(response.user.id);
 
-      if (data.user) {
-        return { error: null };
-      }
-
-      return { error: 'Sign up failed' };
+      return { error: null };
     } catch (error: any) {
-      return { error: error.message || 'Sign up failed' };
+      console.error('Sign up error:', error);
+      return { error: error.response?.data?.error || error.message || 'Sign up failed' };
+    }
+  };
+
+  const createProfileAndAccount = async (user: AuthUser) => {
+    try {
+      const accountId = Math.random().toString().slice(2, 14);
+
+      const { data: accountData, error: accountError } = await supabase
+        .from('accounts')
+        .insert({
+          account_id: accountId,
+          account_name: user.email,
+          account_type: 'individual',
+        })
+        .select()
+        .single();
+
+      if (accountError) throw accountError;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          account_id: accountData.id,
+          is_parent_account: true,
+        });
+
+      if (profileError) throw profileError;
+
+      const { error: memberError } = await supabase
+        .from('account_members')
+        .insert({
+          user_id: user.id,
+          account_id: accountData.id,
+          role: 'owner',
+        });
+
+      if (memberError) throw memberError;
+    } catch (error) {
+      console.error('Error creating profile and account:', error);
+      throw error;
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        return { error: null };
-      }
-
-      return { error: 'Sign in failed' };
+      const response = await authApi.signIn(email, password);
+      setAuthToken(response.token);
+      setUser(response.user);
+      await fetchProfile(response.user.id);
+      return { error: null };
     } catch (error: any) {
-      return { error: error.message || 'Sign in failed' };
+      console.error('Sign in error:', error);
+      return { error: error.response?.data?.error || error.message || 'Sign in failed' };
     }
   };
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
-    try {
-      const mappedProvider = provider === 'microsoft' ? 'azure' : provider;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: mappedProvider as 'google' | 'github' | 'azure',
-        options: {
-          redirectTo: `${window.location.origin}`,
-        },
-      });
-
-      if (error) throw error;
-
-      return { error: null };
-    } catch (error: any) {
-      return { error: error.message || 'SSO sign in failed' };
-    }
+    return { error: 'SSO not implemented with custom backend' };
   };
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const token = getAuthToken();
+      if (token) {
+        await authApi.signOut(token);
+      }
     } catch (error) {
       console.error('Sign out error:', error);
+    } finally {
+      setAuthToken(null);
+      setUser(null);
+      setProfile(null);
+      setAccount(null);
+      setAccountRole(null);
     }
   };
 
