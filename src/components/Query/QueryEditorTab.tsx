@@ -1,11 +1,14 @@
 import { useState, useRef } from 'react';
-import { Play, Save, Database, Clock } from 'lucide-react';
+import { Play, Save, Database, Clock, X } from 'lucide-react';
 import { DataCatalogSidebar } from './DataCatalogSidebar';
+import { supabase } from '../../lib/supabase';
 
 export function QueryEditorTab() {
   const [query, setQuery] = useState('SELECT * FROM users LIMIT 10;');
   const [results, setResults] = useState<any[]>([]);
   const [executing, setExecuting] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const executeQuery = async () => {
@@ -37,9 +40,51 @@ export function QueryEditorTab() {
     }
   };
 
+  const handlePreviewTable = async (dataSourceId: string, database: string, tableName: string) => {
+    setLoadingPreview(true);
+    setPreviewData(null);
+
+    try {
+      const { data: catalogData, error: catalogError } = await supabase
+        .from('catalog_metadata')
+        .select('*')
+        .eq('data_source_id', dataSourceId)
+        .eq('database_name', database)
+        .eq('table_name', tableName)
+        .order('column_order');
+
+      if (catalogError) throw catalogError;
+
+      const columns = (catalogData || []).map(row => ({
+        name: row.column_name,
+        type: row.data_type
+      }));
+
+      const sampleRows = Array.from({ length: 5 }, (_, i) => {
+        const row: any = {};
+        columns.forEach(col => {
+          row[col.name] = `Sample ${i + 1}`;
+        });
+        return row;
+      });
+
+      setPreviewData({
+        tableName: `${database !== 'default' ? database + '.' : ''}${tableName}`,
+        columns,
+        rows: sampleRows,
+        rowCount: 5
+      });
+    } catch (err: any) {
+      console.error('Error loading preview:', err);
+      alert('Failed to load table preview: ' + err.message);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   return (
     <div className="h-full flex">
-      <DataCatalogSidebar onInsertText={handleInsertText} />
+      <DataCatalogSidebar onInsertText={handleInsertText} onPreviewTable={handlePreviewTable} />
 
       <div className="flex-1 flex flex-col">
       <div className="flex items-center justify-between mb-6">
@@ -85,6 +130,50 @@ export function QueryEditorTab() {
             />
           </div>
         </div>
+
+        {previewData && (
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-blue-900">Table Preview: {previewData.tableName}</span>
+                <span className="text-sm text-blue-600 ml-3">({previewData.rowCount} sample rows)</span>
+              </div>
+              <button
+                onClick={() => setPreviewData(null)}
+                className="text-blue-600 hover:text-blue-800 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-auto">
+              <table className="w-full">
+                <thead className="bg-gray-100 border-b border-gray-200">
+                  <tr>
+                    {previewData.columns.map((col: any) => (
+                      <th key={col.name} className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                        <div className="flex flex-col">
+                          <span>{col.name}</span>
+                          <span className="text-xs text-gray-500 font-normal">{col.type}</span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {previewData.rows.map((row: any, idx: number) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      {previewData.columns.map((col: any) => (
+                        <td key={col.name} className="px-4 py-3 text-sm text-gray-700">
+                          {row[col.name] || '-'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">

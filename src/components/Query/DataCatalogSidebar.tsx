@@ -7,7 +7,8 @@ import {
   ChevronDown,
   RefreshCw,
   Search,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,9 +34,10 @@ interface CatalogColumn {
 
 interface DataCatalogSidebarProps {
   onInsertText: (text: string) => void;
+  onPreviewTable?: (dataSourceId: string, database: string, tableName: string) => void;
 }
 
-export function DataCatalogSidebar({ onInsertText }: DataCatalogSidebarProps) {
+export function DataCatalogSidebar({ onInsertText, onPreviewTable }: DataCatalogSidebarProps) {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [catalog, setCatalog] = useState<Record<string, CatalogTable[]>>({});
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
@@ -258,16 +260,30 @@ export function DataCatalogSidebar({ onInsertText }: DataCatalogSidebarProps) {
                                 )}
                                 {table.table_name}
                               </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  insertTableName(table.database_name, table.table_name);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 text-xs text-cyan-600 hover:text-cyan-700 px-1"
-                                title="Insert table name"
-                              >
-                                +
-                              </button>
+                              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                                {onPreviewTable && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onPreviewTable(source.id, table.database_name, table.table_name);
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-700 p-1"
+                                    title="Preview table"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    insertTableName(table.database_name, table.table_name);
+                                  }}
+                                  className="text-xs text-cyan-600 hover:text-cyan-700 px-1"
+                                  title="Insert table name"
+                                >
+                                  +
+                                </button>
+                              </div>
                             </button>
 
                             {isTableExpanded && (
