@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Lock,
   Unlock,
-  Home
+  Home,
+  FolderOpen
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -39,6 +40,12 @@ const menuItems: MenuItem[] = [
     label: 'Home',
     icon: Home,
     route: 'home'
+  },
+  {
+    id: 'workspaces',
+    label: 'Workspaces',
+    icon: FolderOpen,
+    route: 'workspaces'
   },
   {
     id: 'cloud-profiles',
