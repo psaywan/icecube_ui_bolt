@@ -16,16 +16,15 @@ interface Workspace {
   updated_at: string;
 }
 
-const CATEGORIES = [
-  { name: 'Development', color: '#3b82f6', icon: '🔧' },
-  { name: 'Production', color: '#ef4444', icon: '🚀' },
-  { name: 'Data Science', color: '#8b5cf6', icon: '📊' },
-  { name: 'Machine Learning', color: '#ec4899', icon: '🤖' },
-  { name: 'ETL/ELT', color: '#14b8a6', icon: '🔄' },
-  { name: 'Analytics', color: '#f59e0b', icon: '📈' },
-  { name: 'Research', color: '#06b6d4', icon: '🔬' },
-  { name: 'Shared', color: '#10b981', icon: '👥' },
-  { name: 'General', color: '#6b7280', icon: '📁' },
+const DEFAULT_COLORS = [
+  '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6',
+  '#f59e0b', '#06b6d4', '#10b981', '#6b7280', '#f97316',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#a855f7', '#84cc16'
+];
+
+const DEFAULT_ICONS = [
+  '📁', '🔧', '🚀', '📊', '🤖', '🔄', '📈', '🔬', '👥',
+  '💼', '🎯', '⚡', '🌟', '💡', '🎨', '📱', '🖥️', '⚙️'
 ];
 
 export function WorkspacesTab() {
@@ -36,12 +35,15 @@ export function WorkspacesTab() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: 'General',
+    category: '',
     tags: [] as string[],
     icon: '📁',
     color: '#6b7280',
   });
   const [tagInput, setTagInput] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -86,12 +88,15 @@ export function WorkspacesTab() {
       setFormData({
         name: '',
         description: '',
-        category: 'General',
+        category: '',
         tags: [],
         icon: '📁',
         color: '#6b7280',
       });
       setTagInput('');
+      setCustomCategory('');
+      setShowIconPicker(false);
+      setShowColorPicker(false);
       fetchWorkspaces();
     } catch (error) {
       console.error('Failed to create workspace:', error);
@@ -113,16 +118,9 @@ export function WorkspacesTab() {
     }
   };
 
-  const handleCategorySelect = (categoryName: string) => {
-    const category = CATEGORIES.find(c => c.name === categoryName);
-    if (category) {
-      setFormData({
-        ...formData,
-        category: category.name,
-        color: category.color,
-        icon: category.icon,
-      });
-    }
+  const getUniqueCategories = () => {
+    const categories = workspaces.map(w => w.category);
+    return Array.from(new Set(categories)).filter(Boolean);
   };
 
   const addTag = () => {
@@ -146,9 +144,11 @@ export function WorkspacesTab() {
     ? workspaces.filter(w => w.category === selectedCategory)
     : workspaces;
 
-  const workspacesByCategory = CATEGORIES.map(cat => ({
-    ...cat,
-    count: workspaces.filter(w => w.category === cat.name).length,
+  const uniqueCategories = getUniqueCategories();
+
+  const categoryCounts = uniqueCategories.map(cat => ({
+    name: cat,
+    count: workspaces.filter(w => w.category === cat).length,
   }));
 
   if (loading) {
@@ -194,7 +194,7 @@ export function WorkspacesTab() {
                 <span>All Workspaces</span>
                 <span className="text-sm font-semibold">{workspaces.length}</span>
               </button>
-              {workspacesByCategory.map((cat) => (
+              {categoryCounts.map((cat) => (
                 <button
                   key={cat.name}
                   onClick={() => setSelectedCategory(cat.name)}
@@ -205,7 +205,6 @@ export function WorkspacesTab() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span>{cat.icon}</span>
                     <span className="text-sm">{cat.name}</span>
                   </div>
                   <span className="text-sm font-semibold">{cat.count}</span>
@@ -329,29 +328,98 @@ export function WorkspacesTab() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Category *</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {CATEGORIES.map((cat) => (
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
+                  placeholder="e.g., Data Science, Production, Development"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                />
+                {uniqueCategories.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500 mb-2">Existing categories:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueCategories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, category: cat })}
+                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition"
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                  <div className="relative">
                     <button
-                      key={cat.name}
                       type="button"
-                      onClick={() => handleCategorySelect(cat.name)}
-                      className={`p-3 border-2 rounded-lg transition text-left ${
-                        formData.category === cat.name
-                          ? 'border-cyan-500 bg-cyan-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      onClick={() => setShowIconPicker(!showIconPicker)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-2xl text-center hover:bg-gray-100 transition"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl">{cat.icon}</span>
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                      </div>
-                      <div className="text-sm font-medium text-gray-900">{cat.name}</div>
+                      {formData.icon}
                     </button>
-                  ))}
+                    {showIconPicker && (
+                      <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 grid grid-cols-6 gap-2">
+                        {DEFAULT_ICONS.map((icon, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, icon });
+                              setShowIconPicker(false);
+                            }}
+                            className="text-2xl p-2 hover:bg-gray-100 rounded transition"
+                          >
+                            {icon}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 hover:bg-gray-100 transition"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <div
+                          className="w-6 h-6 rounded-full border-2 border-gray-300"
+                          style={{ backgroundColor: formData.color }}
+                        />
+                        <span className="text-sm font-mono">{formData.color}</span>
+                      </div>
+                    </button>
+                    {showColorPicker && (
+                      <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-3 grid grid-cols-5 gap-2">
+                        {DEFAULT_COLORS.map((color, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, color });
+                              setShowColorPicker(false);
+                            }}
+                            className="w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-400 transition"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -403,12 +471,14 @@ export function WorkspacesTab() {
                     setFormData({
                       name: '',
                       description: '',
-                      category: 'General',
+                      category: '',
                       tags: [],
                       icon: '📁',
                       color: '#6b7280',
                     });
                     setTagInput('');
+                    setShowIconPicker(false);
+                    setShowColorPicker(false);
                   }}
                   className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
                 >
