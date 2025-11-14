@@ -224,7 +224,7 @@ export function DataCatalogSidebar({ onInsertText }: DataCatalogSidebarProps) {
                   <span className="text-sm font-medium text-gray-900 truncate flex-1">
                     {source.name}
                   </span>
-                  <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded">
+                  <span className="text-xs text-gray-500 px-2 py-0.5 bg-gray-100 rounded uppercase">
                     {source.type}
                   </span>
                 </button>
