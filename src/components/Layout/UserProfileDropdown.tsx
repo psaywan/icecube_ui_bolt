@@ -10,6 +10,9 @@ export function UserProfileDropdown() {
   const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  console.log('UserProfileDropdown - account:', account);
+  console.log('UserProfileDropdown - profile:', profile);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

@@ -81,14 +81,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileError) throw profileError;
       setProfile(profileData);
 
+      console.log('Profile data:', profileData);
+
       if (profileData?.account_id) {
+        console.log('Fetching account for ID:', profileData.account_id);
         const { data: accountData, error: accountError } = await supabase
           .from('accounts')
           .select('*')
           .eq('id', profileData.account_id)
           .maybeSingle();
 
-        if (accountError) throw accountError;
+        if (accountError) {
+          console.error('Account fetch error:', accountError);
+          throw accountError;
+        }
+        console.log('Account data fetched:', accountData);
         setAccount(accountData);
 
         const { data: memberData, error: memberError } = await supabase
