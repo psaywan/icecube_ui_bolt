@@ -2,6 +2,14 @@ import axios from 'axios';
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://52.66.228.92:8000';
 
+const axiosInstance = axios.create({
+  baseURL: AUTH_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 10000,
+});
+
 export interface AuthUser {
   icecube_id: string;
   username: string;
@@ -27,52 +35,76 @@ export interface SignInResponse {
 
 export const authApi = {
   async signUp(email: string, password: string, fullName: string): Promise<SignUpResponse> {
-    const response = await axios.post(`${AUTH_API_URL}/auth/signup`, {
-      username: email,
-      email,
-      password,
-      full_name: fullName,
-    });
-    return response.data;
+    try {
+      console.log('Calling signup API:', `${AUTH_API_URL}/auth/signup`);
+      const response = await axiosInstance.post('/auth/signup', {
+        username: email,
+        email,
+        password,
+        full_name: fullName,
+      });
+      console.log('Signup response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Signup error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   async signIn(email: string, password: string): Promise<SignInResponse> {
-    const response = await axios.post(`${AUTH_API_URL}/auth/signin`, {
-      email,
-      password,
-    });
-    return response.data;
+    try {
+      console.log('Calling signin API:', `${AUTH_API_URL}/auth/signin`);
+      const response = await axiosInstance.post('/auth/signin', {
+        email,
+        password,
+      });
+      console.log('Signin response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Signin error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   async getUser(token: string): Promise<AuthUser> {
-    const response = await axios.get(`${AUTH_API_URL}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  },
-
-  async signOut(token: string): Promise<void> {
-    await axios.post(
-      `${AUTH_API_URL}/auth/logout`,
-      {},
-      {
+    try {
+      const response = await axiosInstance.get('/auth/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
-    );
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Get user error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  async signOut(token: string): Promise<void> {
+    try {
+      await axiosInstance.post(
+        '/auth/logout',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error('Signout error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 };
 
 export const setAuthToken = (token: string | null) => {
   if (token) {
     localStorage.setItem('auth_token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
     localStorage.removeItem('auth_token');
-    delete axios.defaults.headers.common['Authorization'];
+    delete axiosInstance.defaults.headers.common['Authorization'];
   }
 };
 
