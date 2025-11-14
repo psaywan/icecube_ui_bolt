@@ -115,13 +115,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
       if (error) throw error;
 
       if (data.user) {
-        await createProfileAndAccount(data.user, fullName);
+        if (data.session) {
+          await createProfileAndAccount(data.user, fullName);
+        } else {
+          return { error: 'Please check your email to confirm your account before signing in.' };
+        }
       }
 
       return { error: null };
