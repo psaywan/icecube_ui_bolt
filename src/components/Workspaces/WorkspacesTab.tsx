@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Plus, Loader2, Layers, Trash2, FolderOpen } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { api } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { Database } from '../../lib/supabase';
 
-type Workspace = Database['public']['Tables']['workspaces']['Row'];
+interface Workspace {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function WorkspacesTab() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -19,13 +25,11 @@ export function WorkspacesTab() {
   }, []);
 
   const fetchWorkspaces = async () => {
-    const { data, error } = await supabase
-      .from('workspaces')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setWorkspaces(data);
+    try {
+      const response = await api.workspaces.list();
+      setWorkspaces(response.data);
+    } catch (error) {
+      console.error('Failed to fetch workspaces:', error);
     }
     setLoading(false);
   };
@@ -34,22 +38,25 @@ export function WorkspacesTab() {
     e.preventDefault();
     if (!user) return;
 
-    const { error } = await supabase
-      .from('workspaces')
-      .insert({ user_id: user.id, name, description });
-
-    if (!error) {
+    try {
+      await api.workspaces.create({ user_id: user.id, name, description });
       setShowModal(false);
       setName('');
       setDescription('');
       fetchWorkspaces();
+    } catch (error) {
+      console.error('Failed to create workspace:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workspace?')) return;
-    await supabase.from('workspaces').delete().eq('id', id);
-    fetchWorkspaces();
+    try {
+      await api.workspaces.delete(id);
+      fetchWorkspaces();
+    } catch (error) {
+      console.error('Failed to delete workspace:', error);
+    }
   };
 
   if (loading) {

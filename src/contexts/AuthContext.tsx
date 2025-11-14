@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 interface User {
   id: string;
@@ -23,98 +23,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          full_name: session.user.user_metadata?.full_name
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      api.auth.getUser()
+        .then((response) => {
+          setUser(response.data);
+          setLoading(false);
+        })
+        .catch(() => {
+          localStorage.removeItem('auth_token');
+          setLoading(false);
         });
-      }
+    } else {
       setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          full_name: session.user.user_metadata?.full_name
-        });
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
-      });
+      const response = await api.auth.signUp(email, password, fullName);
+      const { token, user: userData } = response.data;
 
-      if (error) throw error;
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email!,
-          full_name: fullName
-        });
-      }
+      localStorage.setItem('auth_token', token);
+      setUser(userData);
 
       return { error: null };
     } catch (error: any) {
-      return { error: error.message || 'Sign up failed' };
+      return { error: error.response?.data?.error || error.message || 'Sign up failed' };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const response = await api.auth.signIn(email, password);
+      const { token, user: userData } = response.data;
 
-      if (error) throw error;
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email!,
-          full_name: data.user.user_metadata?.full_name
-        });
-      }
+      localStorage.setItem('auth_token', token);
+      setUser(userData);
 
       return { error: null };
     } catch (error: any) {
-      return { error: error.message || 'Sign in failed' };
+      return { error: error.response?.data?.error || error.message || 'Sign in failed' };
     }
   };
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider === 'microsoft' ? 'azure' : provider,
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false
-        }
-      });
-
-      if (error) throw error;
-
-      return { error: null };
+      return { error: 'SSO is not available with the current backend configuration. Please use email/password authentication.' };
     } catch (error: any) {
       console.error('SSO Error:', error);
       return { error: error.message || 'SSO sign in failed' };
@@ -123,10 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await api.auth.signOut();
     } catch (error) {
       console.error('Sign out error:', error);
     } finally {
+      localStorage.removeItem('auth_token');
       setUser(null);
     }
   };
