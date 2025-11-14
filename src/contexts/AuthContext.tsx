@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { authApi, setAuthToken, getAuthToken, type AuthUser } from '../lib/auth-api';
+import type { User } from '@supabase/supabase-js';
 
 interface Account {
   id: string;
@@ -19,7 +19,7 @@ interface Profile {
 }
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
   profile: Profile | null;
   account: Account | null;
   accountRole: string | null;
@@ -33,7 +33,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [accountRole, setAccountRole] = useState<string | null>(null);
@@ -41,21 +41,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setAccount(null);
+        setAccountRole(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const initAuth = async () => {
-    const token = getAuthToken();
-    if (token) {
-      try {
-        const userData = await authApi.getUser(token);
-        setUser(userData);
-        await fetchProfile(userData.icecube_id);
-      } catch (error) {
-        console.error('Error restoring session:', error);
-        setAuthToken(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
       }
+    } catch (error) {
+      console.error('Error restoring session:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchProfile = async (userId: string) => {
@@ -96,23 +108,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const response = await authApi.signUp(email, password, fullName);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
 
-      const userData = response.user;
-      setUser(userData);
+      if (error) throw error;
 
-      await createProfileAndAccount(userData);
-
-      await fetchProfile(userData.icecube_id);
+      if (data.user) {
+        await createProfileAndAccount(data.user, fullName);
+      }
 
       return { error: null };
     } catch (error: any) {
       console.error('Sign up error:', error);
-      return { error: error.response?.data?.detail || error.message || 'Sign up failed' };
+      return { error: error.message || 'Sign up failed' };
     }
   };
 
-  const createProfileAndAccount = async (user: AuthUser) => {
+  const createProfileAndAccount = async (user: User, fullName: string) => {
     try {
       const accountId = Math.random().toString().slice(2, 14);
 
@@ -120,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('accounts')
         .insert({
           account_id: accountId,
-          account_name: user.email,
+          account_name: user.email || 'My Account',
           account_type: 'individual',
         })
         .select()
@@ -131,9 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: user.icecube_id,
-          email: user.email,
-          full_name: user.full_name,
+          id: user.id,
+          email: user.email!,
+          full_name: fullName,
           account_id: accountData.id,
           is_parent_account: true,
         });
@@ -143,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error: memberError } = await supabase
         .from('account_members')
         .insert({
-          user_id: user.icecube_id,
+          user_id: user.id,
           account_id: accountData.id,
           role: 'owner',
         });
@@ -157,35 +176,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await authApi.signIn(email, password);
-      setAuthToken(response.access_token);
-      setUser(response.user);
-      await fetchProfile(response.user.icecube_id);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
       return { error: null };
     } catch (error: any) {
       console.error('Sign in error:', error);
-      return { error: error.response?.data?.detail || error.message || 'Sign in failed' };
+      return { error: error.message || 'Sign in failed' };
     }
   };
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
-    return { error: 'SSO not implemented with custom backend' };
+    try {
+      const providerMap = {
+        google: 'google',
+        github: 'github',
+        azure: 'azure',
+        microsoft: 'azure',
+      } as const;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: providerMap[provider] as any,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('SSO error:', error);
+      return { error: error.message || 'SSO sign in failed' };
+    }
   };
 
   const signOut = async () => {
     try {
-      const token = getAuthToken();
-      if (token) {
-        await authApi.signOut(token);
-      }
-    } catch (error) {
-      console.error('Sign out error:', error);
-    } finally {
-      setAuthToken(null);
+      await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
       setAccount(null);
       setAccountRole(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
