@@ -2,6 +2,7 @@
 # main.py - Complete IceCube Authentication API with all features
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 import boto3
 import os
@@ -27,6 +28,15 @@ app = FastAPI(
     title="IceCube Authentication API",
     description="Complete Authentication API for IceCube platform using AWS Cognito + RDS + JWT",
     version="2.0.0"
+)
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Security
