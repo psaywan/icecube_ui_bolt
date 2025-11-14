@@ -14,11 +14,7 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return <LandingPage />;
-  }
-
-  return <Dashboard />;
+  return user ? <Dashboard /> : <LandingPage />;
 }
 
 function App() {
