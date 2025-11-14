@@ -148,7 +148,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
   return (
     <div
-      className={`bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col h-screen transition-all duration-300 ${
+      className={`bg-gradient-to-b from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white flex flex-col h-screen transition-all duration-300 ${
         isExpanded ? 'w-64' : 'w-20'
       }`}
       onMouseEnter={() => setIsHovered(true)}

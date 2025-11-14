@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sidebar } from './Layout/Sidebar';
+import { UserProfileDropdown } from './Layout/UserProfileDropdown';
 import { HomeTab } from './Home/HomeTab';
 import { CloudProfilesTab } from './CloudProfiles/CloudProfilesTab';
 import { ComputeClustersTab } from './Compute/ComputeClustersTab';
@@ -16,14 +17,14 @@ import DataSourcesTab from './DataSources/DataSourcesTab';
 function PlaceholderTab({ title, description }: { title: string; description: string }) {
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
-      <p className="text-gray-600 mb-8">{description}</p>
-      <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
-        <div className="w-16 h-16 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
+      <p className="text-gray-600 dark:text-slate-400 mb-8">{description}</p>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-12 text-center border border-gray-200 dark:border-slate-700">
+        <div className="w-16 h-16 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900 dark:to-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-3xl">🚧</span>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
-        <p className="text-gray-600">This feature is under development and will be available soon.</p>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Coming Soon</h3>
+        <p className="text-gray-600 dark:text-slate-400">This feature is under development and will be available soon.</p>
       </div>
     </div>
   );
@@ -109,9 +110,14 @@ export function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-slate-900">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 overflow-y-auto">
+        <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-8 py-4 flex justify-end">
+            <UserProfileDropdown />
+          </div>
+        </div>
         <div className="max-w-7xl mx-auto px-8 py-8">
           {renderContent()}
         </div>
