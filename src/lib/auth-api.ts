@@ -3,19 +3,32 @@ import axios from 'axios';
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://52.66.228.92:8000';
 
 export interface AuthUser {
-  id: string;
+  icecube_id: string;
+  username: string;
   email: string;
-  full_name: string;
+  full_name: string | null;
+  is_verified: boolean;
+  last_login?: string | null;
 }
 
-export interface AuthResponse {
-  token: string;
+export interface SignUpResponse {
+  message: string;
+  user: AuthUser;
+  cognito_user_sub: string;
+}
+
+export interface SignInResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
   user: AuthUser;
 }
 
 export const authApi = {
-  async signUp(email: string, password: string, fullName: string): Promise<AuthResponse> {
+  async signUp(email: string, password: string, fullName: string): Promise<SignUpResponse> {
     const response = await axios.post(`${AUTH_API_URL}/auth/signup`, {
+      username: email,
       email,
       password,
       full_name: fullName,
@@ -23,7 +36,7 @@ export const authApi = {
     return response.data;
   },
 
-  async signIn(email: string, password: string): Promise<AuthResponse> {
+  async signIn(email: string, password: string): Promise<SignInResponse> {
     const response = await axios.post(`${AUTH_API_URL}/auth/signin`, {
       email,
       password,
@@ -32,7 +45,7 @@ export const authApi = {
   },
 
   async getUser(token: string): Promise<AuthUser> {
-    const response = await axios.get(`${AUTH_API_URL}/auth/user`, {
+    const response = await axios.get(`${AUTH_API_URL}/auth/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -42,7 +55,7 @@ export const authApi = {
 
   async signOut(token: string): Promise<void> {
     await axios.post(
-      `${AUTH_API_URL}/auth/signout`,
+      `${AUTH_API_URL}/auth/logout`,
       {},
       {
         headers: {

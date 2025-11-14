@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await authApi.getUser(token);
         setUser(userData);
-        await fetchProfile(userData.id);
+        await fetchProfile(userData.icecube_id);
       } catch (error) {
         console.error('Error restoring session:', error);
         setAuthToken(null);
@@ -97,16 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       const response = await authApi.signUp(email, password, fullName);
-      setAuthToken(response.token);
-      setUser(response.user);
 
-      await createProfileAndAccount(response.user);
-      await fetchProfile(response.user.id);
+      const userData = response.user;
+      setUser(userData);
+
+      await createProfileAndAccount(userData);
+
+      await fetchProfile(userData.icecube_id);
 
       return { error: null };
     } catch (error: any) {
       console.error('Sign up error:', error);
-      return { error: error.response?.data?.error || error.message || 'Sign up failed' };
+      return { error: error.response?.data?.detail || error.message || 'Sign up failed' };
     }
   };
 
@@ -129,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: user.id,
+          id: user.icecube_id,
           email: user.email,
           full_name: user.full_name,
           account_id: accountData.id,
@@ -141,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error: memberError } = await supabase
         .from('account_members')
         .insert({
-          user_id: user.id,
+          user_id: user.icecube_id,
           account_id: accountData.id,
           role: 'owner',
         });
@@ -156,13 +158,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await authApi.signIn(email, password);
-      setAuthToken(response.token);
+      setAuthToken(response.access_token);
       setUser(response.user);
-      await fetchProfile(response.user.id);
+      await fetchProfile(response.user.icecube_id);
       return { error: null };
     } catch (error: any) {
       console.error('Sign in error:', error);
-      return { error: error.response?.data?.error || error.message || 'Sign in failed' };
+      return { error: error.response?.data?.detail || error.message || 'Sign in failed' };
     }
   };
 
