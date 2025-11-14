@@ -23,7 +23,7 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
     const { error } = await signIn(email, password);
 
     if (error) {
-      setError(error.message);
+      setError(error);
       setLoading(false);
     }
   };
@@ -35,7 +35,7 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
     const { error } = await signInWithSSO(provider);
 
     if (error) {
-      setError(error.message);
+      setError(error);
       setSsoLoading(null);
     }
   };

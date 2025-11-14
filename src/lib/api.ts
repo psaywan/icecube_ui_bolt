@@ -1,8 +1,16 @@
 import axios from 'axios';
 
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://52.66.228.92:8000';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
 const CALLBACK_API_URL = import.meta.env.VITE_CALLBACK_API_URL;
 const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
+
+const authClient = axios.create({
+  baseURL: AUTH_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -17,6 +25,17 @@ const callbackClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+authClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 apiClient.interceptors.request.use(
   (config) => {
@@ -42,15 +61,15 @@ callbackClient.interceptors.request.use(
 
 export const api = {
   auth: {
-    signUp: (email: string, password: string, fullName?: string) =>
-      apiClient.post('/auth/signup', { email, password, full_name: fullName }),
+    signUp: (username: string, email: string, password: string, fullName?: string) =>
+      authClient.post('/auth/signup', { username, email, password, full_name: fullName }),
 
     signIn: (email: string, password: string) =>
-      apiClient.post('/auth/signin', { email, password }),
+      authClient.post('/auth/signin', { email, password }),
 
-    signOut: () => apiClient.post('/auth/signout'),
+    signOut: () => authClient.post('/auth/logout'),
 
-    getUser: () => apiClient.get('/auth/user'),
+    getUser: () => authClient.get('/auth/me'),
   },
 
   cloudProfiles: {

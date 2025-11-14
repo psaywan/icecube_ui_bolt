@@ -28,7 +28,7 @@ export function SignUpForm({ onToggleMode }: SignUpFormProps) {
     const { error } = await signUp(email, password, fullName);
 
     if (error) {
-      setError(error.message);
+      setError(error);
       setLoading(false);
     }
   };

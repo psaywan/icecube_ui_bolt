@@ -2,17 +2,19 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { api } from '../lib/api';
 
 interface User {
-  id: string;
+  icecube_id: string;
+  username: string;
   email: string;
   full_name?: string;
+  is_verified: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithSSO: (provider: 'google' | 'github' | 'azure' | 'microsoft') => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithSSO: (provider: 'google' | 'github' | 'azure' | 'microsoft') => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -41,29 +43,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const response = await api.auth.signUp(email, password, fullName);
-      const { token, user: userData } = response.data;
+      const response = await api.auth.signUp(email, email, password, fullName);
+      const responseData = response.data;
 
-      localStorage.setItem('auth_token', token);
-      setUser(userData);
+      if (responseData.message && responseData.user) {
+        const tempToken = 'temp_signup_token';
+        localStorage.setItem('auth_token', tempToken);
+        setUser({
+          icecube_id: responseData.user.icecube_id,
+          username: responseData.user.username,
+          email: responseData.user.email,
+          full_name: responseData.user.full_name,
+          is_verified: responseData.user.is_verified
+        });
+        return { error: null };
+      }
 
-      return { error: null };
+      return { error: 'Unexpected response format' };
     } catch (error: any) {
-      return { error: error.response?.data?.error || error.message || 'Sign up failed' };
+      const errorMessage = error.response?.data?.detail || error.message || 'Sign up failed';
+      return { error: errorMessage };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
       const response = await api.auth.signIn(email, password);
-      const { token, user: userData } = response.data;
+      const { access_token, user: userData } = response.data;
 
-      localStorage.setItem('auth_token', token);
-      setUser(userData);
+      localStorage.setItem('auth_token', access_token);
+      setUser({
+        icecube_id: userData.icecube_id,
+        username: userData.username,
+        email: userData.email,
+        full_name: userData.full_name,
+        is_verified: userData.is_verified
+      });
 
       return { error: null };
     } catch (error: any) {
-      return { error: error.response?.data?.error || error.message || 'Sign in failed' };
+      const errorMessage = error.response?.data?.detail || error.message || 'Sign in failed';
+      return { error: errorMessage };
     }
   };
 
