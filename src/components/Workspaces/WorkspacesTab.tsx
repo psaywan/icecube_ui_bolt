@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Loader2, Layers, Trash2, FolderOpen } from 'lucide-react';
-import { api } from '../../lib/api';
+import { Plus, Loader2, FolderOpen, Trash2, Edit2, Tag, Filter } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Workspace {
@@ -8,16 +8,40 @@ interface Workspace {
   user_id: string;
   name: string;
   description: string;
+  category: string;
+  tags: string[];
+  icon: string | null;
+  color: string;
   created_at: string;
   updated_at: string;
 }
+
+const CATEGORIES = [
+  { name: 'Development', color: '#3b82f6', icon: '🔧' },
+  { name: 'Production', color: '#ef4444', icon: '🚀' },
+  { name: 'Data Science', color: '#8b5cf6', icon: '📊' },
+  { name: 'Machine Learning', color: '#ec4899', icon: '🤖' },
+  { name: 'ETL/ELT', color: '#14b8a6', icon: '🔄' },
+  { name: 'Analytics', color: '#f59e0b', icon: '📈' },
+  { name: 'Research', color: '#06b6d4', icon: '🔬' },
+  { name: 'Shared', color: '#10b981', icon: '👥' },
+  { name: 'General', color: '#6b7280', icon: '📁' },
+];
 
 export function WorkspacesTab() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: 'General',
+    tags: [] as string[],
+    icon: '📁',
+    color: '#6b7280',
+  });
+  const [tagInput, setTagInput] = useState('');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -26,8 +50,13 @@ export function WorkspacesTab() {
 
   const fetchWorkspaces = async () => {
     try {
-      const response = await api.workspaces.list();
-      setWorkspaces(response.data);
+      const { data, error } = await supabase
+        .from('workspaces')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWorkspaces(data || []);
     } catch (error) {
       console.error('Failed to fetch workspaces:', error);
     }
@@ -39,10 +68,30 @@ export function WorkspacesTab() {
     if (!user) return;
 
     try {
-      await api.workspaces.create({ user_id: user.id, name, description });
+      const { error } = await supabase
+        .from('workspaces')
+        .insert([{
+          user_id: user.id,
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          tags: formData.tags,
+          icon: formData.icon,
+          color: formData.color,
+        }]);
+
+      if (error) throw error;
+
       setShowModal(false);
-      setName('');
-      setDescription('');
+      setFormData({
+        name: '',
+        description: '',
+        category: 'General',
+        tags: [],
+        icon: '📁',
+        color: '#6b7280',
+      });
+      setTagInput('');
       fetchWorkspaces();
     } catch (error) {
       console.error('Failed to create workspace:', error);
@@ -52,12 +101,55 @@ export function WorkspacesTab() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this workspace?')) return;
     try {
-      await api.workspaces.delete(id);
+      const { error } = await supabase
+        .from('workspaces')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
       fetchWorkspaces();
     } catch (error) {
       console.error('Failed to delete workspace:', error);
     }
   };
+
+  const handleCategorySelect = (categoryName: string) => {
+    const category = CATEGORIES.find(c => c.name === categoryName);
+    if (category) {
+      setFormData({
+        ...formData,
+        category: category.name,
+        color: category.color,
+        icon: category.icon,
+      });
+    }
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, tagInput.trim()],
+      });
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(t => t !== tag),
+    });
+  };
+
+  const filteredWorkspaces = selectedCategory
+    ? workspaces.filter(w => w.category === selectedCategory)
+    : workspaces;
+
+  const workspacesByCategory = CATEGORIES.map(cat => ({
+    ...cat,
+    count: workspaces.filter(w => w.category === cat.name).length,
+  }));
 
   if (loading) {
     return (
@@ -72,7 +164,7 @@ export function WorkspacesTab() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
-          <p className="text-gray-600 mt-2">Organize your data projects</p>
+          <p className="text-gray-600 mt-2">Organize your data projects by category</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -83,58 +175,241 @@ export function WorkspacesTab() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {workspaces.map((workspace) => (
-          <div key={workspace.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-6 border border-gray-100">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Layers className="w-6 h-6 text-white" />
-              </div>
-              <button
-                onClick={() => handleDelete(workspace.id)}
-                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Categories</h2>
+              <Filter className="w-5 h-5 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{workspace.name}</h3>
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">{workspace.description || 'No description'}</p>
-            <button className="flex items-center space-x-2 text-cyan-600 hover:text-cyan-700 font-medium text-sm">
-              <FolderOpen className="w-4 h-4" />
-              <span>Open Workspace</span>
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition ${
+                  selectedCategory === null
+                    ? 'bg-cyan-50 text-cyan-700 font-medium'
+                    : 'hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                <span>All Workspaces</span>
+                <span className="text-sm font-semibold">{workspaces.length}</span>
+              </button>
+              {workspacesByCategory.map((cat) => (
+                <button
+                  key={cat.name}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition ${
+                    selectedCategory === cat.name
+                      ? 'bg-cyan-50 text-cyan-700 font-medium'
+                      : 'hover:bg-gray-50 text-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{cat.icon}</span>
+                    <span className="text-sm">{cat.name}</span>
+                  </div>
+                  <span className="text-sm font-semibold">{cat.count}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        ))}
+        </div>
+
+        <div className="lg:col-span-3">
+          {filteredWorkspaces.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12 text-center">
+              <div className="text-6xl mb-4">📁</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No workspaces found</h3>
+              <p className="text-gray-600 mb-6">
+                {selectedCategory
+                  ? `No workspaces in ${selectedCategory} category`
+                  : 'Create your first workspace to get started'}
+              </p>
+              {!selectedCategory && (
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition"
+                >
+                  Create Workspace
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredWorkspaces.map((workspace) => (
+                <div
+                  key={workspace.id}
+                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-6 border border-gray-100"
+                  style={{ borderLeftWidth: '4px', borderLeftColor: workspace.color }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                        style={{ backgroundColor: `${workspace.color}20` }}
+                      >
+                        {workspace.icon || '📁'}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{workspace.name}</h3>
+                        <span
+                          className="text-xs font-medium px-2 py-1 rounded-full"
+                          style={{
+                            backgroundColor: `${workspace.color}20`,
+                            color: workspace.color,
+                          }}
+                        >
+                          {workspace.category}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(workspace.id)}
+                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-[40px]">
+                    {workspace.description || 'No description'}
+                  </p>
+
+                  {workspace.tags && workspace.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {workspace.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                        >
+                          <Tag className="w-3 h-3" />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <button className="flex items-center space-x-2 text-cyan-600 hover:text-cyan-700 font-medium text-sm">
+                    <FolderOpen className="w-4 h-4" />
+                    <span>Open Workspace</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Workspace</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleCreate} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  placeholder="My Data Science Project"
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
+                  placeholder="Describe your workspace..."
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Category *</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => handleCategorySelect(cat.name)}
+                      className={`p-3 border-2 rounded-lg transition text-left ${
+                        formData.category === cat.name
+                          ? 'border-cyan-500 bg-cyan-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl">{cat.icon}</span>
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                      </div>
+                      <div className="text-sm font-medium text-gray-900">{cat.name}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    placeholder="Add tags (press Enter)"
+                    className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Add
+                  </button>
+                </div>
+                {formData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="flex items-center gap-1 px-3 py-1 bg-cyan-100 text-cyan-700 text-sm rounded-full"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="hover:text-cyan-900"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex space-x-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormData({
+                      name: '',
+                      description: '',
+                      category: 'General',
+                      tags: [],
+                      icon: '📁',
+                      color: '#6b7280',
+                    });
+                    setTagInput('');
+                  }}
                   className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
                 >
                   Cancel
@@ -143,7 +418,7 @@ export function WorkspacesTab() {
                   type="submit"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition"
                 >
-                  Create
+                  Create Workspace
                 </button>
               </div>
             </form>
