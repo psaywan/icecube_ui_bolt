@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { User, LogOut, Settings, Copy, Check, Sun, Moon, Monitor } from 'lucide-react';
+import { LogOut, Settings, Copy, Check, Sun, Moon, Monitor } from 'lucide-react';
 
 export function UserProfileDropdown() {
   const { profile, account, signOut } = useAuth();
@@ -58,109 +58,92 @@ export function UserProfileDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
-          <div className="p-5 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="absolute right-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden z-50">
+          <div className="px-5 py-4 border-b border-slate-700">
+            <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold">
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-900 dark:text-white truncate">{displayName}</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400 truncate">{profile?.email}</div>
+                <div className="font-semibold text-white truncate">{displayName}</div>
+                <div className="text-sm text-slate-400 truncate">{profile?.email}</div>
               </div>
             </div>
-
-            {account && (
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">ID</span>
-                  </div>
-                  <span className="text-sm font-bold text-blue-900 dark:text-blue-100">iceCube Account ID</span>
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <code className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 rounded-md font-mono text-base font-semibold border border-blue-300 dark:border-blue-700 shadow-sm">
-                    {account.account_id}
-                  </code>
-                  <button
-                    onClick={handleCopyAccountId}
-                    className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copy
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-1.5">
-                  <span>💡</span>
-                  <span>Use this unique ID for Cloud Profile setup and cloud integrations</span>
-                </p>
-              </div>
-            )}
           </div>
 
-          <div className="p-2">
-            <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Theme</div>
+          {account && (
+            <div className="px-5 py-3 border-b border-slate-700">
+              <div className="text-xs font-medium text-slate-400 mb-2">Account ID</div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
+                  <Copy className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <code className="text-white font-mono text-sm font-medium">
+                    {account.account_id}
+                  </code>
+                </div>
+                <button
+                  onClick={handleCopyAccountId}
+                  className="p-1.5 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
+                  title="Copy Account ID"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-cyan-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-slate-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="p-2 border-b border-slate-700">
+            <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase">Theme</div>
             <button
-              onClick={() => {
-                setTheme('light');
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              onClick={() => setTheme('light')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition-colors ${
                 theme === 'light'
-                  ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'text-cyan-400'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               <Sun className="w-5 h-5" />
-              <span className="font-medium">Light</span>
-              {theme === 'light' && <Check className="w-4 h-4 ml-auto" />}
+              <span className="font-medium flex-1 text-left">Light</span>
+              {theme === 'light' && <Check className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => {
-                setTheme('dark');
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              onClick={() => setTheme('dark')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition-colors ${
                 theme === 'dark'
-                  ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'text-cyan-400'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               <Moon className="w-5 h-5" />
-              <span className="font-medium">Dark</span>
-              {theme === 'dark' && <Check className="w-4 h-4 ml-auto" />}
+              <span className="font-medium flex-1 text-left">Dark</span>
+              {theme === 'dark' && <Check className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => {
-                setTheme('system');
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              onClick={() => setTheme('system')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded transition-colors ${
                 theme === 'system'
-                  ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
-                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'text-cyan-400'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               <Monitor className="w-5 h-5" />
-              <span className="font-medium">System</span>
-              {theme === 'system' && <Check className="w-4 h-4 ml-auto" />}
+              <span className="font-medium flex-1 text-left">System</span>
+              {theme === 'system' && <Check className="w-4 h-4" />}
             </button>
           </div>
 
-          <div className="p-2 border-t border-slate-200 dark:border-slate-700">
-            <button className="w-full flex items-center gap-3 px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <div className="p-2">
+            <button className="w-full flex items-center gap-3 px-3 py-2.5 text-slate-300 hover:bg-slate-700 rounded transition-colors">
               <Settings className="w-5 h-5" />
               <span className="font-medium">Profile Settings</span>
             </button>
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-red-400 hover:bg-slate-700 rounded transition-colors"
             >
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Sign Out</span>
