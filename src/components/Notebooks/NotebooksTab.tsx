@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, FileCode, Play, Trash2, Loader2, FolderOpen } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/RDSAuthContext';
 import { CreateNotebookModal } from './CreateNotebookModal';
 import { NotebookEditor } from './NotebookEditor';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/RDSAuthContext';
 import { LogIn, Loader2 } from 'lucide-react';
 import { Github } from 'lucide-react';
 

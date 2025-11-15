@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/RDSAuthContext';
 import { CloudProfileCard } from './CloudProfileCard';
 import { CreateCloudProfileModal } from './CreateCloudProfileModal';
 import AWSSetupPage from './AWSSetupPage';

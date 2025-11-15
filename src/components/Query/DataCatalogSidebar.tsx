@@ -11,7 +11,7 @@ import {
   Eye
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/RDSAuthContext';
 
 interface DataSource {
   id: string;
