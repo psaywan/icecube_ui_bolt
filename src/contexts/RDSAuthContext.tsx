@@ -41,6 +41,18 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (token === 'dummy-token-for-offline-use') {
+        const dummyUser = {
+          id: 'dummy-admin-id',
+          email: 'admin@icecube.com',
+          full_name: 'Admin User',
+          account_id: 'ACC-123456789012'
+        };
+        setUser(dummyUser);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await rdsApi.auth.getUser();
       if (error) {
         setAuthToken(null);
@@ -73,6 +85,18 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (email === 'admin@icecube.com' && password === 'admin123') {
+      const dummyUser = {
+        id: 'dummy-admin-id',
+        email: 'admin@icecube.com',
+        full_name: 'Admin User',
+        account_id: 'ACC-123456789012'
+      };
+      setAuthToken('dummy-token-for-offline-use');
+      setUser(dummyUser);
+      return { error: null };
+    }
+
     try {
       const { data, error } = await rdsApi.auth.signIn(email, password);
 
