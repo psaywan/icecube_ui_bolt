@@ -52,13 +52,27 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 export const rdsApi = {
   auth: {
     async signUp(email: string, password: string, fullName: string) {
-      const response = await fetchWithAuth('/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, full_name: fullName }),
-      });
+      try {
+        const signupResponse = await fetchWithAuth('/auth/signup', {
+          method: 'POST',
+          body: JSON.stringify({
+            username: email,
+            email,
+            password,
+            full_name: fullName
+          }),
+        });
 
-      setAuthToken(response.access_token);
-      return { data: response, error: null };
+        const signinResponse = await fetchWithAuth('/auth/signin', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
+
+        setAuthToken(signinResponse.access_token);
+        return { data: signinResponse, error: null };
+      } catch (error: any) {
+        return { data: null, error: error.message };
+      }
     },
 
     async signIn(email: string, password: string) {
