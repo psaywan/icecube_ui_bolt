@@ -104,14 +104,33 @@ const AuthProvider = ({ children }) => {
         return { error: 'This email is already registered. Please sign in instead.' };
       }
 
-      console.log('Creating profile for user:', data.user.id);
+      console.log('Creating account and profile for user:', data.user.id);
 
       if (data.user) {
+        const accountId = `ACC-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+        const { data: accountData, error: accountError } = await supabase.from('accounts').insert([
+          {
+            account_id: accountId,
+            account_name: `${fullName}'s Account`,
+            account_type: 'individual',
+          },
+        ]).select().single();
+
+        if (accountError) {
+          console.error('Account creation error:', accountError);
+          return { error: `Account setup failed: ${accountError.message}` };
+        }
+
+        console.log('Account created:', accountData);
+
         const { error: profileError } = await supabase.from('profiles').upsert([
           {
             id: data.user.id,
             email: email,
             full_name: fullName,
+            account_id: accountData.id,
+            is_parent_account: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -121,10 +140,22 @@ const AuthProvider = ({ children }) => {
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
-          return { error: `Account created but profile setup failed: ${profileError.message}` };
+          return { error: `Profile setup failed: ${profileError.message}` };
         }
 
-        console.log('Profile created successfully');
+        const { error: memberError } = await supabase.from('account_members').insert([
+          {
+            account_id: accountData.id,
+            user_id: data.user.id,
+            role: 'owner',
+          },
+        ]);
+
+        if (memberError) {
+          console.error('Account member creation error:', memberError);
+        }
+
+        console.log('Profile and account created successfully');
       }
 
       console.log('Signup successful!');
