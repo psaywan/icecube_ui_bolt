@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { api } from '../lib/api.ts';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
@@ -21,115 +21,134 @@ const AuthProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          await loadUserProfile();
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('refresh_token');
-      } finally {
-        setLoading(false);
-        setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadUserProfile(session.user.id);
       }
-    };
-
-    setTimeout(() => {
       setLoading(false);
       setIsLoading(false);
-    }, 1000);
+    });
 
-    initAuth();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setAccount(null);
+        setAccountRole(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = async (userId) => {
     try {
-      const response = await api.auth.getUser();
-      const userData = response.data;
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-      const transformedUser = {
-        id: userData.id,
-        email: userData.email,
-        full_name: userData.full_name || userData.email?.split('@')[0],
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.email || 'User')}&background=00bfff&color=fff`,
-        username: userData.email?.split('@')[0],
-      };
+      if (profileData) {
+        setProfile(profileData);
+        if (profileData.account_id) {
+          const { data: accountData } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('id', profileData.account_id)
+            .maybeSingle();
 
-      setUser(transformedUser);
-      setProfile(userData);
-      setIsOnline(true);
+          setAccount(accountData);
+        }
+      }
     } catch (error) {
-      console.error('Error loading user profile:', error);
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('refresh_token');
-      setUser(null);
-      setProfile(null);
+      console.error('Error loading profile:', error);
     }
   };
 
   const signUp = async (email, password, fullName) => {
     try {
-      const response = await api.auth.signUp(email, email, password, fullName);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
 
-      if (response.data) {
-        return { error: null };
+      if (error) {
+        return { error: error.message };
       }
 
-      return { error: 'Signup failed' };
+      if (data.user) {
+        await supabase.from('profiles').insert([
+          {
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+          },
+        ]);
+      }
+
+      return { error: null };
     } catch (error) {
       console.error('Signup error:', error);
-      return { error: error.response?.data?.detail || error.message || 'Signup failed' };
+      return { error: error.message || 'Signup failed' };
     }
   };
 
   const signIn = async (email, password) => {
     try {
-      const response = await api.auth.signIn(email, password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (response.data?.access_token) {
-        localStorage.setItem('auth_token', response.data.access_token);
-        localStorage.setItem('refresh_token', response.data.refresh_token);
-
-        const userData = response.data.user;
-        const transformedUser = {
-          id: userData.id,
-          email: userData.email,
-          full_name: userData.full_name || userData.email?.split('@')[0],
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.email || 'User')}&background=00bfff&color=fff`,
-          username: userData.email?.split('@')[0],
-        };
-
-        setUser(transformedUser);
-        setProfile(userData);
-        return { error: null };
+      if (error) {
+        return { error: error.message };
       }
 
-      return { error: 'Login failed' };
+      return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
-      return { error: error.response?.data?.detail || error.message || 'Login failed' };
+      return { error: error.message || 'Login failed' };
     }
   };
 
   const signInWithSSO = async (provider) => {
-    return { error: 'SSO not implemented with RDS backend' };
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('SSO error:', error);
+      return { error: error.message || 'SSO login failed' };
+    }
   };
 
   const signOut = async () => {
     try {
-      await api.auth.signOut();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('refresh_token');
+      await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
       setAccount(null);
       setAccountRole(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -137,7 +156,16 @@ const AuthProvider = ({ children }) => {
     try {
       if (!user) return { success: false, error: 'No user logged in' };
 
-      setUser({ ...user, ...updates });
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      await loadUserProfile(user.id);
       return { success: true };
     } catch (error) {
       console.error('Update user error:', error);
@@ -147,9 +175,10 @@ const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        await loadUserProfile();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        await loadUserProfile(session.user.id);
       }
     } catch (error) {
       console.error('Refresh user error:', error);
@@ -157,15 +186,43 @@ const AuthProvider = ({ children }) => {
   };
 
   const forgotPassword = async (email) => {
-    return { success: false, error: 'Password reset not implemented with RDS backend yet' };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const resetPassword = async (email, code, newPassword) => {
-    return { success: false, error: 'Password reset not implemented with RDS backend yet' };
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const changePassword = async (currentPassword, newPassword) => {
-    return { success: false, error: 'Change password not implemented with RDS backend yet' };
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const syncWithBackend = async () => {
