@@ -106,6 +106,7 @@ const menuItems: MenuItem[] = [
     icon: Briefcase,
     children: [
       { label: 'Pipelines', route: 'pipelines' },
+      { label: 'IGO ETL', route: 'igo-etl' },
       { label: 'Job Monitor', route: 'jobs' },
       { label: 'Job Logs', route: 'job-logs' },
       { label: 'Job Triggers', route: 'job-triggers' }

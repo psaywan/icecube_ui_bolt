@@ -8,6 +8,7 @@ import { WorkspacesTab } from './Workspaces/WorkspacesTab';
 import { DataCatalogTab } from './DataCatalog/DataCatalogTab';
 import { NotebooksTab } from './Notebooks/NotebooksTab';
 import { JobsTab } from './Jobs/JobsTab';
+import { IGOETLTab } from './Jobs/IGOETLTab';
 import { PipelinesTab } from './Pipelines/PipelinesTab';
 import { MonitoringTab } from './Monitoring/MonitoringTab';
 import { QueryEditorTab } from './Query/QueryEditorTab';
@@ -81,6 +82,8 @@ export function Dashboard() {
 
       case 'jobs':
         return <JobsTab />;
+      case 'igo-etl':
+        return <IGOETLTab />;
       case 'job-logs':
         return <PlaceholderTab title="Job Logs" description="View detailed job execution logs" />;
       case 'job-triggers':
