@@ -1,5 +1,39 @@
 # Troubleshooting Guide
 
+## ⚠️ "Missing Supabase environment variables" Error
+
+**This is the most common error when downloading and running locally!**
+
+### Quick Fix
+
+1. **Create `.env` file** in the project root (same folder as `package.json`)
+2. **Copy from `.env.example`** or add these lines:
+
+```env
+VITE_SUPABASE_URL=https://uzhzwrszdpkxqosjjypm.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6aHp3cnN6ZHBreHFvc2pqeXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMjc0NjYsImV4cCI6MjA3ODcwMzQ2Nn0.PFUjZ7whzXBxfeT8RBGmkQS1RrlJWvpQY8RlBndA9X4
+VITE_API_URL=http://localhost:8000
+```
+
+3. **Restart dev server**:
+   - Press `Ctrl+C` to stop
+   - Run `npm run dev` again
+
+### Why This Happens
+
+When you download the code, the `.env` file is **not included** in the download (it's in `.gitignore` for security). You must create it manually on your local machine.
+
+### Verification
+
+Check that your `.env` file exists:
+```bash
+ls -la .env
+```
+
+You should see the file listed. If not, create it!
+
+---
+
 ## White Screen / App Not Loading
 
 If you're seeing a white screen when running the application locally, follow these steps:
@@ -17,6 +51,8 @@ VITE_API_URL=http://localhost:8000
 VITE_SUPABASE_URL=https://uzhzwrszdpkxqosjjypm.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
 ```
+
+**Important:** Copy the full key from `.env.example`!
 
 ### 3. Start the Backend (If Using RDS Backend)
 

@@ -1,161 +1,117 @@
-# Quick Start Guide - IceCube with RDS
+# 🚀 Quick Start - Local Development
 
-## Prerequisites
+## ⚠️ Important: Environment Variables
 
-- Python 3.8+
-- Node.js 18+
-- PostgreSQL client (optional, for database setup)
+When you download this code to your local machine, you **MUST** create a `.env` file in the project root.
 
-## Setup in 3 Steps
+### Step 1: Create .env File
 
-### 1. Setup Database (One-time)
-
-The database schema is ready in `database/complete_rds_schema.sql`
-
-**Option A: Using psql**
-```bash
-psql -h icecubedb.cqxo4kicuog0.us-east-1.rds.amazonaws.com -U postgres -d icecubedb -f database/complete_rds_schema.sql
-```
-
-**Option B: Using any PostgreSQL client**
-- Connect to your RDS instance
-- Execute the SQL from `database/complete_rds_schema.sql`
-
-### 2. Start Backend API
+Copy the `.env.example` file to `.env`:
 
 ```bash
-cd backend
-pip install -r requirements.txt
-python complete_rds_api.py
+cp .env.example .env
 ```
 
-Backend will start on **http://localhost:8000**
+Or manually create a `.env` file with this content:
 
-You should see:
+```env
+# Backend API
+VITE_API_URL=http://localhost:8000
+
+# Supabase (REQUIRED for data persistence)
+VITE_SUPABASE_URL=https://uzhzwrszdpkxqosjjypm.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6aHp3cnN6ZHBreHFvc2pqeXBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMjc0NjYsImV4cCI6MjA3ODcwMzQ2Nn0.PFUjZ7whzXBxfeT8RBGmkQS1RrlJWvpQY8RlBndA9X4
 ```
-🚀 Starting IceCube Complete RDS API...
-INFO:     Started server process
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
 
-### 3. Start Frontend
+**⚠️ Without these variables, you'll see the Supabase error!**
 
-In a new terminal:
+### Step 2: Install Dependencies
 
 ```bash
 npm install
+```
+
+### Step 3: Start Development Server
+
+```bash
 npm run dev
 ```
 
-Frontend will start on **http://localhost:5173**
+**Important:** If the dev server was already running when you created `.env`, **restart it**:
+- Press `Ctrl+C` to stop
+- Run `npm run dev` again
 
-## Test It Out
+### Step 4: Login
 
-1. Open **http://localhost:5173**
-2. Click **"Get Started"** or **"Sign Up"**
-3. Fill in your details:
-   - Email: your@email.com
-   - Password: YourPassword123
-   - Full Name: Your Name
-4. Click **Sign Up**
-5. You'll be logged in automatically
-6. Check the profile dropdown (top right) - you'll see your **Icecube Account ID**!
+Open `http://localhost:5173` and login with:
+- **Email:** admin@icecube.com
+- **Password:** admin123
 
-## Verify Backend is Working
+## Why Do We Use Supabase?
 
-Visit these URLs:
+The app uses **Supabase** for data persistence:
+- ✅ ETL pipelines storage
+- ✅ Data source configurations
+- ✅ Saved queries
+- ✅ Workspace management
+- ✅ Notebook storage
 
-- http://localhost:8000 - API info
-- http://localhost:8000/health - Health check
-- http://localhost:8000/docs - Interactive API documentation
+**Authentication** uses the RDS backend (dummy admin account for offline mode), but **data storage** uses Supabase.
 
-## Troubleshooting
+## Common Issues
 
-### Backend won't start
+### Issue: "Missing Supabase environment variables"
 
-**Error: Database credentials missing**
-- Make sure `.env` file has DB credentials
-- Check DATABASE_URL is correct
+**Cause:** The `.env` file doesn't exist or is missing variables.
 
-**Error: Connection refused**
-- Verify RDS instance is running
-- Check security group allows your IP
-- Verify credentials are correct
+**Solution:**
+1. Create `.env` file in project root
+2. Copy content from `.env.example`
+3. Restart dev server (`Ctrl+C` then `npm run dev`)
 
-### Frontend can't connect to backend
+### Issue: White screen after creating .env
 
-**Error: Failed to fetch**
-- Make sure backend is running on port 8000
-- Check `VITE_API_URL` in `.env` is `http://localhost:8000`
-- Restart frontend after changing `.env`
+**Cause:** Dev server needs restart to load new environment variables.
 
-### Account ID not showing
+**Solution:**
+```bash
+# Stop the server
+Ctrl+C
 
-- Make sure you signed up (not just signed in with old account)
-- Old accounts from Supabase won't have account_id
-- Create a new account to test
+# Clear cache (optional but recommended)
+rm -rf node_modules/.vite
 
-## What's Different from Supabase
-
-| Feature | Supabase | RDS |
-|---------|----------|-----|
-| Authentication | Supabase Auth | Custom JWT + bcrypt |
-| Database | Supabase Postgres | AWS RDS Postgres |
-| API | Supabase SDK | REST API |
-| Session | Supabase session | JWT tokens |
-| Account ID | Supabase generated | Custom 12-digit ID |
-
-## File Structure
-
-```
-project/
-├── backend/
-│   ├── complete_rds_api.py  ← Main API server
-│   ├── requirements.txt      ← Python dependencies
-│   └── run.sh               ← Startup script
-├── database/
-│   └── complete_rds_schema.sql  ← Database schema
-├── src/
-│   ├── lib/
-│   │   └── rdsApi.ts        ← API client
-│   └── contexts/
-│       └── RDSAuthContext.tsx  ← Auth provider
-└── .env  ← Configuration
+# Restart
+npm run dev
 ```
 
-## Configuration
+### Issue: "Failed to fetch" or network errors
 
-The `.env` file contains:
+**Cause:** Backend is not running (this is OK for most features).
 
-```env
-# Frontend API endpoint
-VITE_API_URL=http://localhost:8000
+**Solution:** The app works in offline mode! Just login with dummy admin account.
 
-# Backend database connection
-DB_HOST=icecubedb.cqxo4kicuog0.us-east-1.rds.amazonaws.com
-DB_PORT=5432
-DB_NAME=icecubedb
-DB_USER=postgres
-DB_PASSWORD=zandubam2025
+## Verification Checklist
 
-# JWT secret for token generation
-JWT_SECRET_KEY=your-super-secret-jwt-key-change-in-production-2024
+- [ ] `.env` file exists in project root
+- [ ] `.env` contains `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+- [ ] Dev server restarted after creating `.env`
+- [ ] Browser shows login page (not white screen)
+- [ ] No "Missing Supabase environment variables" error in console
+- [ ] Can login with admin@icecube.com / admin123
+
+## Quick Commands
+
+```bash
+# Install and run
+npm install
+npm run dev
+
+# If you see Supabase error:
+# 1. Create .env file (copy from .env.example)
+# 2. Restart dev server
 ```
 
-## Production Deployment
+## Success!
 
-For production:
-
-1. Deploy backend to a server (EC2, DigitalOcean, etc.)
-2. Get the server's public URL (e.g., `https://api.icecube.com`)
-3. Update `VITE_API_URL` in `.env` to point to your backend
-4. Rebuild frontend: `npm run build`
-5. Deploy frontend build to hosting (Vercel, Netlify, S3, etc.)
-6. Update CORS in backend to allow your frontend domain
-
-## Support
-
-For issues or questions, check:
-- `RDS_MIGRATION_COMPLETE.md` - Complete migration documentation
-- http://localhost:8000/docs - API documentation
-- Backend logs for error details
+If you see the login page and can login, you're all set! 🎉
