@@ -32,6 +32,16 @@ export default function NodeConfigModal({ node, onSave, onClose }: NodeConfigMod
     setCurrentCodeField(null);
   };
 
+  const shouldShowField = (field: any) => {
+    if (field.name === 'gitRepoUrl' || field.name === 'gitBranch' || field.name === 'gitFolder') {
+      return config['useGitRepo'] === true;
+    }
+    if (field.name === 'scriptLocation') {
+      return config['useGitRepo'] !== true;
+    }
+    return true;
+  };
+
   const renderField = (field: any) => {
     switch (field.type) {
       case 'code':
@@ -144,15 +154,41 @@ export default function NodeConfigModal({ node, onSave, onClose }: NodeConfigMod
           </div>
 
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
-            {nodeType.configFields.map((field) => (
-              <div key={field.name}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
-                </label>
-                {renderField(field)}
-              </div>
-            ))}
+            {nodeType.configFields.map((field) => {
+              if (!shouldShowField(field)) return null;
+
+              return (
+                <div key={field.name}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  {renderField(field)}
+                  {field.name === 'useGitRepo' && config[field.name] && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-800">
+                        Git repository integration enabled. Configure your repository details below.
+                      </p>
+                    </div>
+                  )}
+                  {field.name === 'jobParameters' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Add multiple parameters, one per line. Format: --key=value
+                    </p>
+                  )}
+                  {field.name === 'gitRepoUrl' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Supports GitHub, GitLab, Bitbucket, and AWS CodeCommit repositories
+                    </p>
+                  )}
+                  {field.name === 'workerType' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      DPU = Data Processing Unit. Higher DPUs provide more compute power.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
 
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button

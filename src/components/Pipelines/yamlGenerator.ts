@@ -62,6 +62,7 @@ function getOperatorType(nodeType: string): string {
     'aws-redshift-read': 'RedshiftToDataFrameOperator',
     'aws-redshift-write': 'DataFrameToRedshiftOperator',
     'aws-glue': 'GlueJobOperator',
+    'aws-glue-crawler': 'GlueCrawlerOperator',
     'azure-blob-read': 'BlobToDataFrameOperator',
     'azure-blob-write': 'DataFrameToBlobOperator',
     'azure-sql-read': 'AzureSQLToDataFrameOperator',
@@ -90,7 +91,25 @@ function generateTaskConfig(node: WorkflowNode): Record<string, any> {
   if (node.data.config) {
     Object.entries(node.data.config).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        config[key] = value;
+        if (key === 'jobParameters' && typeof value === 'string') {
+          const params: Record<string, string> = {};
+          value.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed && trimmed.startsWith('--')) {
+              const parts = trimmed.substring(2).split('=');
+              if (parts.length === 2) {
+                params[`--${parts[0].trim()}`] = parts[1].trim();
+              }
+            }
+          });
+          if (Object.keys(params).length > 0) {
+            config['job_arguments'] = params;
+          }
+        } else if (key === 'useGitRepo') {
+          config['use_git_repo'] = value;
+        } else {
+          config[key] = value;
+        }
       }
     });
   }
