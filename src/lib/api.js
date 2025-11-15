@@ -1,5 +1,5 @@
 // src/services/api.js - Enhanced with Backend Integration
-const API_BASE_URL = 'http://52.66.228.92:8000'
+const API_BASE_URL = '/api'
 
 class APIService {
   constructor() {

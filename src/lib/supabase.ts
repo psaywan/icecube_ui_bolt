@@ -1,83 +1,13 @@
-import apiService from './api';
+import { createClient } from '@supabase/supabase-js';
 
-export const supabase = {
-  auth: {
-    signUp: async ({ email, password, options }: any) => {
-      const result = await apiService.signup({
-        email,
-        password,
-        name: options?.data?.full_name || email.split('@')[0]
-      });
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      if (result.success) {
-        return { data: { user: result.data?.user, session: result.data }, error: null };
-      }
-      return { data: { user: null, session: null }, error: new Error(result.error) };
-    },
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-    signInWithPassword: async ({ email, password }: any) => {
-      const result = await apiService.signin({ email, password });
-
-      if (result.success) {
-        return { data: { user: result.data?.user, session: result.data }, error: null };
-      }
-      return { data: { user: null, session: null }, error: new Error(result.error) };
-    },
-
-    signInWithOAuth: async ({ provider, options }: any) => {
-      return { data: null, error: new Error('OAuth not implemented with backend API') };
-    },
-
-    signOut: async () => {
-      await apiService.logout();
-      return { error: null };
-    },
-
-    getSession: async () => {
-      if (apiService.isAuthenticated()) {
-        const result = await apiService.getCurrentUser();
-        if (result.success) {
-          return { data: { session: { user: result.data } }, error: null };
-        }
-      }
-      return { data: { session: null }, error: null };
-    },
-
-    onAuthStateChange: (callback: Function) => {
-      return {
-        data: {
-          subscription: {
-            unsubscribe: () => {}
-          }
-        }
-      };
-    },
-  },
-
-  from: (table: string) => ({
-    select: () => ({
-      eq: () => ({
-        maybeSingle: async () => ({ data: null, error: null })
-      }),
-      single: async () => ({ data: null, error: null })
-    }),
-    insert: () => ({
-      select: () => ({
-        single: async () => ({ data: null, error: null })
-      })
-    }),
-    update: () => ({
-      eq: () => ({
-        select: () => ({
-          single: async () => ({ data: null, error: null })
-        })
-      })
-    }),
-    delete: () => ({
-      eq: () => ({})
-    })
-  })
-};
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default supabase;
 
