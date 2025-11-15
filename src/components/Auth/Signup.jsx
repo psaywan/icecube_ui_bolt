@@ -1,10 +1,8 @@
 // src/pages/Signup.jsx - API Integration (Fixed)
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Canvas } from '@react-three/fiber'
-import SnowParticles from '../components/SnowParticles'
-import apiService from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import apiService from '../../lib/api'
+import { useAuth } from '../../contexts/useAuth'
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -180,13 +178,6 @@ export default function Signup() {
       position: 'relative',
       overflow: 'auto'
     }}>
-      <Canvas
-        style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
-        camera={{ position: [0, 0, 10], fov: 75 }}
-      >
-        <SnowParticles count={400} />
-      </Canvas>
-
       <div style={{
         position: 'relative',
         zIndex: 2,

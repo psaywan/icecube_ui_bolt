@@ -1,10 +1,8 @@
 // src/pages/Login.jsx - Simplified Backend Integration
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import SnowParticles from '../components/SnowParticles'
-import { Canvas } from '@react-three/fiber'
-import { useAuth } from '../hooks/useAuth'
-import apiService from '../services/api'
+import { useAuth } from '../../contexts/useAuth'
+import apiService from '../../lib/api'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -153,12 +151,6 @@ export default function Login() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <Canvas
-          style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
-          camera={{ position: [0, 0, 10], fov: 75 }}
-        >
-          <SnowParticles count={400} />
-        </Canvas>
 
         <div style={{
           position: 'relative',

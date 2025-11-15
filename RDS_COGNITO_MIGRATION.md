@@ -248,7 +248,7 @@ All existing features work the same:
 
 ### 1. Start Your Backend
 
-Ensure your backend API is running on `http://localhost:8002`
+Ensure your backend API is running on `http://52.66.228.92:8000`
 
 ### 2. Start the Frontend
 
