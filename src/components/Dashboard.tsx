@@ -8,7 +8,7 @@ import { WorkspacesTab } from './Workspaces/WorkspacesTab';
 import { DataCatalogTab } from './DataCatalog/DataCatalogTab';
 import { NotebooksTab } from './Notebooks/NotebooksTab';
 import { JobsTab } from './Jobs/JobsTab';
-import { IGOETLTab } from './Jobs/IGOETLTab';
+import { IGOETLTab } from './Jobs/IGOETLTabEnhanced';
 import { PipelinesTab } from './Pipelines/PipelinesTab';
 import { MonitoringTab } from './Monitoring/MonitoringTab';
 import { QueryEditorTab } from './Query/QueryEditorTab';
