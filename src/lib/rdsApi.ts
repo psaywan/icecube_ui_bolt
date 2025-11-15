@@ -271,4 +271,34 @@ export const rdsApi = {
       });
     },
   },
+
+  etlPipelines: {
+    async getAll() {
+      return fetchWithAuth('/etl-pipelines');
+    },
+
+    async getById(id: string) {
+      return fetchWithAuth(`/etl-pipelines/${id}`);
+    },
+
+    async create(data: any) {
+      return fetchWithAuth('/etl-pipelines', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async update(id: string, data: any) {
+      return fetchWithAuth(`/etl-pipelines/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async delete(id: string) {
+      return fetchWithAuth(`/etl-pipelines/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
 };

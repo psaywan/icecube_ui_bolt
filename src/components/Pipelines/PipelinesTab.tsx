@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, GitBranch, Loader2, Play, Trash2, Calendar, Download, RefreshCw, Square, Settings } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 import PipelineWorkflowBuilder from './PipelineWorkflowBuilder';
 import GitImportModal, { GitImportConfig } from './GitImportModal';
 import { CloudIcon } from '../Common/CloudIcon';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Database, AlertCircle, CheckCircle, Trash2, ChevronRight } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 import AddDataSourceModal from './AddDataSourceModal';
 import DataSourceDetailView from './DataSourceDetailView';
 

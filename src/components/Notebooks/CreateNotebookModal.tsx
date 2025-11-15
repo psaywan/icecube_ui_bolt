@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileCode, Server } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 
 interface CreateNotebookModalProps {
   onClose: () => void;

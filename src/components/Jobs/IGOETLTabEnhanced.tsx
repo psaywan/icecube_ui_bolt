@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Wand2, List, Plus, Layout, Edit3, Trash2, Play, Clock } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
+import { getCurrentUser } from '../../lib/auth';
 import ETLPipelineCreator from './ETLPipelineCreator';
 
 interface SavedPipeline {
@@ -26,18 +27,13 @@ export function IGOETLTab() {
 
   const fetchPipelines = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { user, error: authError } = await getCurrentUser();
+      if (authError || !user) {
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from('etl_pipelines')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await rdsApi.etlPipelines.getAll();
       setPipelines(data || []);
     } catch (error: any) {
       console.error('Error fetching pipelines:', error);
@@ -50,12 +46,7 @@ export function IGOETLTab() {
     if (!confirm('Are you sure you want to delete this pipeline?')) return;
 
     try {
-      const { error } = await supabase
-        .from('etl_pipelines')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await rdsApi.etlPipelines.delete(id);
       await fetchPipelines();
     } catch (error: any) {
       alert('Error deleting pipeline: ' + error.message);

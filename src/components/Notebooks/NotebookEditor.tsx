@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loader2, CheckCircle, AlertCircle, Code, FileText, Database, MoveUp, MoveDown, Link } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 
 interface NotebookEditorProps {
   notebookId: string;

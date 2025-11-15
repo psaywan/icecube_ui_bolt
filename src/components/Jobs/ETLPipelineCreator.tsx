@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Layout, Edit3, Save, Sparkles, MessageSquare } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
+import { getCurrentUser } from '../../lib/auth';
 import VisualETLCanvas from './VisualETLCanvas';
 import ETLFormBuilder from './ETLFormBuilder';
 import ETLAIChat from './ETLAIChat';
@@ -28,8 +29,8 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
   const handleSave = async (autoSave = false) => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { user, error: authError } = await getCurrentUser();
+      if (authError || !user) throw new Error('Not authenticated');
 
       const pipelineData = {
         user_id: user.id,
@@ -45,18 +46,9 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
       };
 
       if (pipeline?.id) {
-        const { error } = await supabase
-          .from('etl_pipelines')
-          .update(pipelineData)
-          .eq('id', pipeline.id);
-
-        if (error) throw error;
+        await rdsApi.etlPipelines.update(pipeline.id, pipelineData);
       } else {
-        const { error } = await supabase
-          .from('etl_pipelines')
-          .insert([pipelineData]);
-
-        if (error) throw error;
+        await rdsApi.etlPipelines.create(pipelineData);
       }
 
       if (!autoSave) {

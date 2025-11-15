@@ -10,7 +10,7 @@ import {
   Loader2,
   Eye
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 import { useAuth } from '../../contexts/RDSAuthContext';
 
 interface DataSource {

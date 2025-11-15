@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Database, Key, Shield, List, Plus } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
+import { getCurrentUser } from '../../lib/auth';
 
 interface NodeConfigModalProps {
   node: any;
@@ -25,17 +26,12 @@ export default function NodeConfigModal({ node, onClose, onSave }: NodeConfigMod
   const fetchSavedDataSources = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { user, error: authError } = await getCurrentUser();
+      if (authError || !user) return;
 
-      const { data, error } = await supabase
-        .from('data_sources')
-        .select('*')
-        .eq('type', node.data.sourceType || node.data.targetType)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setSavedDataSources(data || []);
+      const data = await rdsApi.dataSources.getAll();
+      const filtered = data.filter((ds: any) => ds.type === (node.data.sourceType || node.data.targetType));
+      setSavedDataSources(filtered || []);
     } catch (error) {
       console.error('Error fetching data sources:', error);
     } finally {

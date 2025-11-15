@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Loader2, FolderOpen, Trash2, Edit2, Tag, Filter } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 import { useAuth } from '../../contexts/RDSAuthContext';
 
 interface Workspace {

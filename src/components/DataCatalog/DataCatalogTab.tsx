@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Database, Table, Eye, Search, Loader2, FileText, FileSpreadsheet, Cloud, HardDrive, ChevronDown, ChevronRight } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 
 interface CatalogEntry {
   id: string;

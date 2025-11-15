@@ -1,5 +1,5 @@
 import { Server, Play, Square, Trash2, Cpu, Activity } from 'lucide-react';
-import { Database } from '../../lib/supabase';
+import { rdsApi } from '../../lib/rdsApi';
 
 type ComputeCluster = Database['public']['Tables']['compute_clusters']['Row'];
 
