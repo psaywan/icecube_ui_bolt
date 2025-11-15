@@ -50,7 +50,10 @@ export function LandingPage() {
           >
             ← Back to Home
           </button>
-          <LoginForm />
+          <LoginForm onToggleMode={() => {
+            setShowLogin(false);
+            setShowSignUp(true);
+          }} />
         </div>
       </div>
     );
@@ -66,7 +69,10 @@ export function LandingPage() {
           >
             ← Back to Home
           </button>
-          <SignUpForm />
+          <SignUpForm onToggleMode={() => {
+            setShowSignUp(false);
+            setShowLogin(true);
+          }} />
         </div>
       </div>
     );
