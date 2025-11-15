@@ -37,6 +37,11 @@ const AuthProvider = ({ children }) => {
       }
     };
 
+    setTimeout(() => {
+      setLoading(false);
+      setIsLoading(false);
+    }, 1000);
+
     initAuth();
   }, []);
 
