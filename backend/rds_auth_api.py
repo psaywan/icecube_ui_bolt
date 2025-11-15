@@ -1,6 +1,8 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 import os
 from typing import Optional
@@ -20,6 +22,15 @@ app = FastAPI(
     description="Complete Authentication API for IceCube platform using PostgreSQL RDS",
     version="3.0.0"
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"❌ Validation error: {exc.errors()}")
+    print(f"❌ Request body: {exc.body}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors(), "body": str(exc.body)}
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -209,6 +220,7 @@ async def health_check(db: Session = Depends(get_db)):
 @app.post("/auth/signup", response_model=TokenResponse)
 async def signup_user(user_data: UserSignUpRequest, db: Session = Depends(get_db)):
     try:
+        print(f"📥 Received signup request - Email: {user_data.email}, Full Name: {user_data.full_name}")
         result = db.execute(
             text("SELECT id FROM users WHERE email = :email"),
             {"email": user_data.email}
