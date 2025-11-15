@@ -206,7 +206,7 @@ async def health_check(db: Session = Depends(get_db)):
         "database_host": DB_HOST
     }
 
-@app.post("/auth/signup", response_model=UserResponse)
+@app.post("/auth/signup", response_model=TokenResponse)
 async def signup_user(user_data: UserSignUpRequest, db: Session = Depends(get_db)):
     try:
         result = db.execute(
@@ -286,11 +286,27 @@ async def signup_user(user_data: UserSignUpRequest, db: Session = Depends(get_db
 
         db.commit()
 
-        return UserResponse(
-            id=str(user_id),
-            email=user_data.email,
-            full_name=user_data.full_name,
-            created_at=datetime.utcnow()
+        token_data = {
+            "user_id": str(user_id),
+            "email": user_data.email,
+            "full_name": user_data.full_name
+        }
+
+        access_token = create_access_token(token_data)
+        refresh_token = create_refresh_token(token_data)
+
+        user_info = {
+            "id": str(user_id),
+            "email": user_data.email,
+            "full_name": user_data.full_name
+        }
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user=user_info
         )
 
     except HTTPException:
