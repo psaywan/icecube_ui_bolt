@@ -1,18 +1,27 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-let authToken: string | null = localStorage.getItem('auth_token');
+let authToken: string | null = null;
+
+function initAuthToken() {
+  if (typeof window !== 'undefined' && !authToken) {
+    authToken = localStorage.getItem('auth_token');
+  }
+}
 
 export function setAuthToken(token: string | null) {
   authToken = token;
-  if (token) {
-    localStorage.setItem('auth_token', token);
-  } else {
-    localStorage.removeItem('auth_token');
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
   }
 }
 
 export function getAuthToken() {
-  return authToken || localStorage.getItem('auth_token');
+  initAuthToken();
+  return authToken || (typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null);
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {

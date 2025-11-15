@@ -35,6 +35,11 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
 
   async function checkUser() {
     try {
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+
       const token = getAuthToken();
       if (!token) {
         setLoading(false);
@@ -53,12 +58,19 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data, error } = await rdsApi.auth.getUser();
-      if (error) {
+      try {
+        const { data, error } = await rdsApi.auth.getUser();
+        if (error) {
+          console.warn('Auth check failed, clearing token:', error);
+          setAuthToken(null);
+          setUser(null);
+        } else {
+          setUser(data.user);
+        }
+      } catch (apiError) {
+        console.warn('API not available, allowing offline mode');
         setAuthToken(null);
         setUser(null);
-      } else {
-        setUser(data.user);
       }
     } catch (error) {
       console.error('Error checking user:', error);
