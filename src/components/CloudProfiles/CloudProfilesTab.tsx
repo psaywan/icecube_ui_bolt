@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/RDSAuthContext';
+import { rdsApi } from '../../lib/rdsApi';
 import { CloudProfileCard } from './CloudProfileCard';
 import { CreateCloudProfileModal } from './CreateCloudProfileModal';
 import AWSSetupPage from './AWSSetupPage';
 
-type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
+interface CloudProfile {
+  id: string;
+  user_id: string;
+  provider: string;
+  profile_name: string;
+  credentials: any;
+  region?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function CloudProfilesTab() {
   const [profiles, setProfiles] = useState<CloudProfile[]>([]);

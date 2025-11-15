@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Server, Zap, Info, Settings2, HardDrive, Clock } from 'lucide-react';
 
-type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
+interface CloudProfile { id: string; user_id: string; provider: string; profile_name: string; credentials: any; region?: string; created_at: string; updated_at: string; }
 
 interface CreateClusterModalProps {
   onClose: () => void;

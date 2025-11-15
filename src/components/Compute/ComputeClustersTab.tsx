@@ -4,7 +4,19 @@ import { rdsApi } from '../../lib/rdsApi';
 import { ComputeClusterCard } from './ComputeClusterCard';
 import { CreateClusterModal } from './CreateClusterModal';
 
-type ComputeCluster = Database['public']['Tables']['compute_clusters']['Row'];
+interface ComputeCluster {
+  id: string;
+  user_id: string;
+  cluster_name: string;
+  cluster_type: string;
+  cloud_profile_id: string;
+  instance_type?: string;
+  instance_count?: number;
+  status: string;
+  config: any;
+  created_at: string;
+  updated_at: string;
+}
 
 export function ComputeClustersTab() {
   const [clusters, setClusters] = useState<(ComputeCluster & { cloud_profile_name?: string })[]>([]);

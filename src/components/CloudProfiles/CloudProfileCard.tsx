@@ -1,6 +1,6 @@
 import { Cloud, MapPin, Trash2, Power, AlertCircle } from 'lucide-react';
 
-type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
+interface CloudProfile { id: string; user_id: string; provider: string; profile_name: string; credentials: any; region?: string; created_at: string; updated_at: string; }
 
 interface CloudProfileCardProps {
   profile: CloudProfile;
