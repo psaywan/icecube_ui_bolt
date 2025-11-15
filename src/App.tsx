@@ -1,4 +1,4 @@
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { RDSAuthProvider, useAuth } from './contexts/RDSAuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LandingPage } from './components/LandingPage';
 import { Dashboard } from './components/Dashboard';
@@ -21,9 +21,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
+      <RDSAuthProvider>
         <AppContent />
-      </AuthProvider>
+      </RDSAuthProvider>
     </ThemeProvider>
   );
 }
