@@ -143,7 +143,7 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Pipeline Name</label>
             <input
@@ -155,14 +155,20 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <input
-              type="text"
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+              <span className="text-xs text-gray-500 ml-2">(Supports multiple lines)</span>
+            </label>
+            <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-              placeholder="Brief description of this pipeline"
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-y"
+              placeholder="Describe the purpose of this ETL pipeline, data sources, transformations, and targets. You can write as much detail as needed..."
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {description.length} characters
+            </p>
           </div>
         </div>
 
