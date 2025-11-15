@@ -51,12 +51,6 @@ export function LoginForm({ onToggleMode }: LoginFormProps) {
           <p className="text-gray-600 mt-2">Multi-Cloud Data Platform</p>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm mb-6">
-          <p className="font-medium">Demo Credentials:</p>
-          <p className="mt-1">Email: admin@icecube.com</p>
-          <p>Password: admin123</p>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
