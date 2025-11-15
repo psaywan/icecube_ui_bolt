@@ -1,7 +1,7 @@
 
 // src/hooks/useAuth.jsx - Updated for Backend Integration
 import { useState, useEffect, createContext, useContext } from 'react'
-import apiService from '../services/api'
+import apiService from '../lib/api'
 
 // Create Auth Context
 const AuthContext = createContext()
