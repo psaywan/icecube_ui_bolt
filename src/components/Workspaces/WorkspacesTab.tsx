@@ -175,14 +175,14 @@ export function WorkspacesTab() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+      <div className="flex gap-6">
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sticky top-24">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Categories</h2>
               <Filter className="w-5 h-5 text-gray-400" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <button
                 onClick={() => setSelectedCategory(null)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition ${
@@ -191,8 +191,8 @@ export function WorkspacesTab() {
                     : 'hover:bg-gray-50 text-gray-700'
                 }`}
               >
-                <span>All Workspaces</span>
-                <span className="text-sm font-semibold">{workspaces.length}</span>
+                <span className="text-sm">All Workspaces</span>
+                <span className="text-xs font-semibold bg-gray-100 px-2 py-0.5 rounded-full">{workspaces.length}</span>
               </button>
               {categoryCounts.map((cat) => (
                 <button
@@ -204,17 +204,15 @@ export function WorkspacesTab() {
                       : 'hover:bg-gray-50 text-gray-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{cat.name}</span>
-                  </div>
-                  <span className="text-sm font-semibold">{cat.count}</span>
+                  <span className="text-sm truncate">{cat.name}</span>
+                  <span className="text-xs font-semibold bg-gray-100 px-2 py-0.5 rounded-full ml-2">{cat.count}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="flex-1">
           {filteredWorkspaces.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12 text-center">
               <div className="text-6xl mb-4">📁</div>
@@ -234,64 +232,77 @@ export function WorkspacesTab() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
               {filteredWorkspaces.map((workspace) => (
                 <div
                   key={workspace.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all p-6 border border-gray-100"
+                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-cyan-200"
                   style={{ borderLeftWidth: '4px', borderLeftColor: workspace.color }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                        style={{ backgroundColor: `${workspace.color}20` }}
-                      >
-                        {workspace.icon || '📁'}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{workspace.name}</h3>
-                        <span
-                          className="text-xs font-medium px-2 py-1 rounded-full"
-                          style={{
-                            backgroundColor: `${workspace.color}20`,
-                            color: workspace.color,
-                          }}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl flex-shrink-0"
+                          style={{ backgroundColor: `${workspace.color}20` }}
                         >
-                          {workspace.category}
-                        </span>
+                          {workspace.icon || '📁'}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">{workspace.name}</h3>
+                            <span
+                              className="text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
+                              style={{
+                                backgroundColor: `${workspace.color}20`,
+                                color: workspace.color,
+                              }}
+                            >
+                              {workspace.category}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 line-clamp-1">
+                            {workspace.description || 'No description'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                        {workspace.tags && workspace.tags.length > 0 && (
+                          <div className="flex items-center gap-1 mr-2">
+                            {workspace.tags.slice(0, 3).map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {workspace.tags.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+                                +{workspace.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <button
+                          className="px-4 py-2 bg-cyan-50 text-cyan-600 hover:bg-cyan-100 rounded-lg font-medium text-sm transition flex items-center gap-2"
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Open
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(workspace.id)}
+                          className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(workspace.id)}
-                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
-
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-[40px]">
-                    {workspace.description || 'No description'}
-                  </p>
-
-                  {workspace.tags && workspace.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {workspace.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                        >
-                          <Tag className="w-3 h-3" />
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <button className="flex items-center space-x-2 text-cyan-600 hover:text-cyan-700 font-medium text-sm">
-                    <FolderOpen className="w-4 h-4" />
-                    <span>Open Workspace</span>
-                  </button>
                 </div>
               ))}
             </div>
