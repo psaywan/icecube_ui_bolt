@@ -85,31 +85,22 @@ function AuthContextWrapper({ children }: { children: ReactNode }) {
   } : null;
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const result = await auth.signup({ email, password, name: fullName });
-
-    if (result.success) {
-      return { error: null };
-    }
-
-    return { error: result.error || 'Sign up failed' };
+    const result = await auth.signUp(email, password, fullName);
+    return result;
   };
 
   const signIn = async (email: string, password: string) => {
-    const result = await auth.login(email, password);
-
-    if (result.success) {
-      return { error: null };
-    }
-
-    return { error: result.error || 'Sign in failed' };
+    const result = await auth.signIn(email, password);
+    return result;
   };
 
   const signInWithSSO = async (provider: 'google' | 'github' | 'azure' | 'microsoft') => {
-    return { error: 'SSO not implemented yet with Cognito' };
+    const result = await auth.signInWithSSO(provider);
+    return result;
   };
 
   const signOut = async () => {
-    await auth.logout();
+    await auth.signOut();
   };
 
   const contextValue: AuthContextType = {
