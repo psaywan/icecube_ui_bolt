@@ -5,6 +5,7 @@ interface User {
   email: string;
   full_name?: string;
   account_id?: string;
+  icecube_id?: string;
 }
 
 interface Account {
@@ -50,7 +51,8 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
           id: 'dummy-admin-id',
           email: 'admin@icecube.com',
           full_name: 'Admin User',
-          account_id: 'ACC-123456789012'
+          account_id: 'ACC-123456789012',
+          icecube_id: 'ACC-123456789012'
         };
         setUser(dummyUser);
         setLoading(false);
@@ -64,7 +66,11 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
           setAuthToken(null);
           setUser(null);
         } else {
-          setUser(data.user);
+          const userWithAccountId = {
+            ...data.user,
+            account_id: data.user.icecube_id
+          };
+          setUser(userWithAccountId);
         }
       } catch (apiError) {
         console.warn('API not available, allowing offline mode');
@@ -88,7 +94,11 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      setUser(data.user);
+      const userWithAccountId = {
+        ...data.user,
+        account_id: data.user.icecube_id
+      };
+      setUser(userWithAccountId);
       return { error: null };
     } catch (error: any) {
       return { error: error.message || 'Sign up failed' };
@@ -101,7 +111,8 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
         id: 'dummy-admin-id',
         email: 'admin@icecube.com',
         full_name: 'Admin User',
-        account_id: 'ACC-123456789012'
+        account_id: 'ACC-123456789012',
+        icecube_id: 'ACC-123456789012'
       };
       setAuthToken('dummy-token-for-offline-use');
       setUser(dummyUser);
@@ -115,7 +126,11 @@ export function RDSAuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      setUser(data.user);
+      const userWithAccountId = {
+        ...data.user,
+        account_id: data.user.icecube_id
+      };
+      setUser(userWithAccountId);
       return { error: null };
     } catch (error: any) {
       return { error: error.message || 'Sign in failed' };
