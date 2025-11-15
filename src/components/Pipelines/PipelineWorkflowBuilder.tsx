@@ -12,7 +12,7 @@ import ReactFlow, {
   BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Save, Play, Eye, X } from 'lucide-react';
+import { Save, Play, Eye, X, Edit3, Check } from 'lucide-react';
 import { NODE_TYPES, NODE_CATEGORIES } from './nodeTypes';
 import { generateAirflowYAML, generatePipelinePreview } from './yamlGenerator';
 import NodeConfigModal from './NodeConfigModal';
@@ -37,6 +37,7 @@ export default function PipelineWorkflowBuilder({
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [showYamlPreview, setShowYamlPreview] = useState(false);
   const [generatedYaml, setGeneratedYaml] = useState('');
+  const [isEditingYaml, setIsEditingYaml] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
@@ -114,12 +115,18 @@ export default function PipelineWorkflowBuilder({
   const handleGenerateYAML = () => {
     const yaml = generateAirflowYAML(nodes as any, edges, pipelineName);
     setGeneratedYaml(yaml);
+    setIsEditingYaml(false);
     setShowYamlPreview(true);
   };
 
   const handleSavePipeline = () => {
-    const yaml = generateAirflowYAML(nodes as any, edges, pipelineName);
+    const yaml = isEditingYaml ? generatedYaml : generateAirflowYAML(nodes as any, edges, pipelineName);
     onSave({ nodes, edges }, yaml);
+  };
+
+  const handleSaveYamlFromPreview = () => {
+    onSave({ nodes, edges }, generatedYaml);
+    setShowYamlPreview(false);
   };
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -221,17 +228,62 @@ export default function PipelineWorkflowBuilder({
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h3 className="text-lg font-bold">Generated Airflow YAML</h3>
-                <button
-                  onClick={() => setShowYamlPreview(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center space-x-3">
+                  <h3 className="text-lg font-bold">
+                    {isEditingYaml ? 'Edit YAML Configuration' : 'Generated Airflow YAML'}
+                  </h3>
+                  {isEditingYaml && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                      Editing Mode
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  {!isEditingYaml ? (
+                    <button
+                      onClick={() => setIsEditingYaml(true)}
+                      className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center space-x-2 text-sm"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Edit</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSaveYamlFromPreview}
+                      className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center space-x-2 text-sm"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowYamlPreview(false);
+                      setIsEditingYaml(false);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <pre className="p-4 bg-gray-900 text-green-400 overflow-auto flex-1 text-sm font-mono">
-                {generatedYaml}
-              </pre>
+              {isEditingYaml ? (
+                <textarea
+                  value={generatedYaml}
+                  onChange={(e) => setGeneratedYaml(e.target.value)}
+                  className="p-4 bg-gray-900 text-green-400 flex-1 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  spellCheck={false}
+                />
+              ) : (
+                <pre className="p-4 bg-gray-900 text-green-400 overflow-auto flex-1 text-sm font-mono">
+                  {generatedYaml}
+                </pre>
+              )}
+              {isEditingYaml && (
+                <div className="p-3 bg-yellow-50 border-t border-yellow-200 text-xs text-yellow-800">
+                  <strong>Note:</strong> Manual edits will be saved with the pipeline. Make sure your YAML is valid.
+                </div>
+              )}
             </div>
           </div>
         )}
