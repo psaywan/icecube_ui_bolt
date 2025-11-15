@@ -1,6 +1,5 @@
-// src/contexts/useAuth.jsx - Supabase Authentication
 import { useState, useEffect, createContext, useContext } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api.ts';
 
 const AuthContext = createContext();
 
@@ -24,13 +23,14 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.user) {
-          await loadUserProfile(session.user);
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          await loadUserProfile();
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
       } finally {
         setLoading(false);
         setIsLoading(false);
@@ -38,165 +38,99 @@ const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-
-      if (session?.user) {
-        await loadUserProfile(session.user);
-      } else {
-        setUser(null);
-        setProfile(null);
-        setAccount(null);
-        setAccountRole(null);
-      }
-
-      setLoading(false);
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const loadUserProfile = async (authUser) => {
+  const loadUserProfile = async () => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
+      const response = await api.auth.getUser();
+      const userData = response.data;
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error loading profile:', profileError);
-      }
-
-      const userData = {
-        id: authUser.id,
-        email: authUser.email,
-        full_name: profileData?.full_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
-        avatar: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.email || 'User')}&background=00bfff&color=fff`,
-        username: authUser.email?.split('@')[0],
+      const transformedUser = {
+        id: userData.id,
+        email: userData.email,
+        full_name: userData.full_name || userData.email?.split('@')[0],
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.email || 'User')}&background=00bfff&color=fff`,
+        username: userData.email?.split('@')[0],
       };
 
-      setUser(userData);
-      setProfile(profileData);
+      setUser(transformedUser);
+      setProfile(userData);
       setIsOnline(true);
     } catch (error) {
       console.error('Error loading user profile:', error);
-      setUser({
-        id: authUser.id,
-        email: authUser.email,
-        full_name: authUser.email?.split('@')[0],
-        avatar: `https://ui-avatars.com/api/?name=User&background=00bfff&color=fff`,
-      });
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+      setProfile(null);
     }
   };
 
   const signUp = async (email, password, fullName) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
+      const response = await api.auth.signUp(email, email, password, fullName);
 
-      if (error) {
-        return { error: error.message };
+      if (response.data) {
+        return { error: null };
       }
 
-      if (data.user) {
-        await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email: data.user.email,
-              full_name: fullName,
-            },
-          ])
-          .select()
-          .maybeSingle();
-      }
-
-      return { error: null };
+      return { error: 'Signup failed' };
     } catch (error) {
       console.error('Signup error:', error);
-      return { error: error.message };
+      return { error: error.response?.data?.detail || error.message || 'Signup failed' };
     }
   };
 
   const signIn = async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const response = await api.auth.signIn(email, password);
 
-      if (error) {
-        return { error: error.message };
+      if (response.data?.access_token) {
+        localStorage.setItem('auth_token', response.data.access_token);
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+
+        const userData = response.data.user;
+        const transformedUser = {
+          id: userData.id,
+          email: userData.email,
+          full_name: userData.full_name || userData.email?.split('@')[0],
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.full_name || userData.email || 'User')}&background=00bfff&color=fff`,
+          username: userData.email?.split('@')[0],
+        };
+
+        setUser(transformedUser);
+        setProfile(userData);
+        return { error: null };
       }
 
-      return { error: null };
+      return { error: 'Login failed' };
     } catch (error) {
       console.error('Sign in error:', error);
-      return { error: error.message };
+      return { error: error.response?.data?.detail || error.message || 'Login failed' };
     }
   };
 
   const signInWithSSO = async (provider) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider === 'azure' || provider === 'microsoft' ? 'azure' : provider,
-        options: {
-          redirectTo: `${window.location.origin}`,
-        },
-      });
-
-      if (error) {
-        return { error: error.message };
-      }
-
-      return { error: null };
-    } catch (error) {
-      console.error('SSO sign in error:', error);
-      return { error: error.message };
-    }
+    return { error: 'SSO not implemented with RDS backend' };
   };
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await api.auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
       setUser(null);
       setProfile(null);
       setAccount(null);
       setAccountRole(null);
-    } catch (error) {
-      console.error('Sign out error:', error);
     }
   };
 
   const updateUser = async (updates) => {
     try {
       if (!user) return { success: false, error: 'No user logged in' };
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: updates.full_name,
-          avatar_url: updates.avatar_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (profileError) {
-        return { success: false, error: profileError.message };
-      }
 
       setUser({ ...user, ...updates });
       return { success: true };
@@ -208,9 +142,9 @@ const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await loadUserProfile(session.user);
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        await loadUserProfile();
       }
     } catch (error) {
       console.error('Refresh user error:', error);
@@ -218,41 +152,15 @@ const AuthProvider = ({ children }) => {
   };
 
   const forgotPassword = async (email) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Forgot password error:', error);
-      return { success: false, error: error.message };
-    }
+    return { success: false, error: 'Password reset not implemented with RDS backend yet' };
   };
 
   const resetPassword = async (email, code, newPassword) => {
-    return { success: false, error: 'Not implemented' };
+    return { success: false, error: 'Password reset not implemented with RDS backend yet' };
   };
 
   const changePassword = async (currentPassword, newPassword) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Change password error:', error);
-      return { success: false, error: error.message };
-    }
+    return { success: false, error: 'Change password not implemented with RDS backend yet' };
   };
 
   const syncWithBackend = async () => {
