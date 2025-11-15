@@ -11,12 +11,14 @@ export function SignUpForm({ onToggleMode }: SignUpFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     if (password.length < 6) {
@@ -30,6 +32,12 @@ export function SignUpForm({ onToggleMode }: SignUpFormProps) {
     if (error) {
       setError(error);
       setLoading(false);
+    } else {
+      setSuccess('Account created successfully! You can now sign in.');
+      setLoading(false);
+      setTimeout(() => {
+        onToggleMode();
+      }, 2000);
     }
   };
 
@@ -48,6 +56,12 @@ export function SignUpForm({ onToggleMode }: SignUpFormProps) {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              {success}
             </div>
           )}
 

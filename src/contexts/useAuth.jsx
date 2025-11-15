@@ -81,21 +81,39 @@ const AuthProvider = ({ children }) => {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: window.location.origin,
         },
       });
 
       if (error) {
+        console.error('Supabase signup error:', error);
         return { error: error.message };
       }
 
+      if (!data.user) {
+        return { error: 'Failed to create user account' };
+      }
+
+      if (data.user && !data.user.identities?.length) {
+        return { error: 'This email is already registered. Please sign in instead.' };
+      }
+
       if (data.user) {
-        await supabase.from('profiles').insert([
+        const { error: profileError } = await supabase.from('profiles').upsert([
           {
             id: data.user.id,
             email: email,
             full_name: fullName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           },
-        ]);
+        ], {
+          onConflict: 'id'
+        });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
       }
 
       return { error: null };
