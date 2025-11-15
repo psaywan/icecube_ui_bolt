@@ -21,6 +21,8 @@ class APIService {
     }
 
     const config = {
+      mode: 'cors',
+      credentials: 'omit',
       headers: defaultHeaders,
       ...options,
       headers: {
@@ -30,8 +32,9 @@ class APIService {
     }
 
     try {
-      console.log(`API Call: ${options.method || 'GET'} ${url}`)
-      
+      console.log(`🔄 API Call: ${options.method || 'GET'} ${url}`)
+      console.log('📦 Request config:', config)
+
       const response = await fetch(url, config)
       
       // Handle non-JSON responses
@@ -57,10 +60,20 @@ class APIService {
       }
 
     } catch (error) {
-      console.error(`API Error for ${endpoint}:`, error)
+      console.error(`❌ API Error for ${endpoint}:`, error)
+
+      // Better error messages for common issues
+      let errorMessage = error.message
+
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Unable to connect to backend server. Please check if the server is running and CORS is properly configured.'
+      } else if (error.message.includes('NetworkError')) {
+        errorMessage = 'Network error. Please check your internet connection and backend server status.'
+      }
+
       return {
         success: false,
-        error: error.message,
+        error: errorMessage,
         status: error.status || 500
       }
     }
