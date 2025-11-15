@@ -74,6 +74,8 @@ const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, fullName) => {
     try {
+      console.log('Attempting to sign up:', email);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -85,18 +87,24 @@ const AuthProvider = ({ children }) => {
         },
       });
 
+      console.log('Signup response:', { data, error });
+
       if (error) {
         console.error('Supabase signup error:', error);
         return { error: error.message };
       }
 
       if (!data.user) {
+        console.error('No user in signup response');
         return { error: 'Failed to create user account' };
       }
 
       if (data.user && !data.user.identities?.length) {
+        console.log('User exists but no identities');
         return { error: 'This email is already registered. Please sign in instead.' };
       }
+
+      console.log('Creating profile for user:', data.user.id);
 
       if (data.user) {
         const { error: profileError } = await supabase.from('profiles').upsert([
@@ -113,12 +121,16 @@ const AuthProvider = ({ children }) => {
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
+          return { error: `Account created but profile setup failed: ${profileError.message}` };
         }
+
+        console.log('Profile created successfully');
       }
 
+      console.log('Signup successful!');
       return { error: null };
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Signup exception:', error);
       return { error: error.message || 'Signup failed' };
     }
   };
