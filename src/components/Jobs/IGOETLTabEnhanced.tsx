@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Wand2, List, Plus, Layout, Edit3, Trash2, Play, Clock } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import { getCurrentUser } from '../../lib/auth';
 import ETLPipelineCreator from './ETLPipelineCreator';
 
+import { rdsApi } from '../../lib/rdsApi';
 interface SavedPipeline {
   id: string;
   name: string;

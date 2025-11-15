@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import { useAuth } from '../../contexts/RDSAuthContext';
 import { CloudProfileCard } from './CloudProfileCard';
 import { CreateCloudProfileModal } from './CreateCloudProfileModal';
 import AWSSetupPage from './AWSSetupPage';
-import { rdsApi } from '../../lib/rdsApi';
 
 type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
 

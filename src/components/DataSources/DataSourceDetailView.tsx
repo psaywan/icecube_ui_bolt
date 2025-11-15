@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Trash2, FileText, Calendar, Database } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import AddFileToSourceModal from './AddFileToSourceModal';
 
 interface DataSourceDetailViewProps {

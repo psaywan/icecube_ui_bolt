@@ -13,7 +13,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/RDSAuthContext';
-import { rdsApi } from '../../lib/rdsApi';
 
 const CONFIG = {
   API_TIMEOUT: 30000,

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Layout, Edit3, Save, Sparkles, MessageSquare } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import { getCurrentUser } from '../../lib/auth';
 import VisualETLCanvas from './VisualETLCanvas';
 import ETLFormBuilder from './ETLFormBuilder';
 import ETLAIChat from './ETLAIChat';
 
+import { rdsApi } from '../../lib/rdsApi';
 interface ETLPipelineCreatorProps {
   pipeline?: any;
   onBack: () => void;

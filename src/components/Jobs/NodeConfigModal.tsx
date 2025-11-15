@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Database, Key, Shield, List, Plus } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import { getCurrentUser } from '../../lib/auth';
 
+import { rdsApi } from '../../lib/rdsApi';
 interface NodeConfigModalProps {
   node: any;
   onClose: () => void;

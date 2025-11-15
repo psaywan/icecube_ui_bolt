@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { rdsApi, setAuthToken, getAuthToken } from '../lib/rdsApi';
-
+import { rdsApi } from '../lib/rdsApi';
 interface User {
   id: string;
   email: string;

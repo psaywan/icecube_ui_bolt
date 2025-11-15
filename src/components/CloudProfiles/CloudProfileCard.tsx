@@ -1,5 +1,4 @@
 import { Cloud, MapPin, Trash2, Power, AlertCircle } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 
 type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
 

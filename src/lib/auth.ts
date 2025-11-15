@@ -1,4 +1,3 @@
-import { getAuthToken, rdsApi } from './rdsApi';
 
 export async function getCurrentUser() {
   const token = getAuthToken();

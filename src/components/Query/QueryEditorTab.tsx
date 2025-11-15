@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Play, Save, Database, X, Plus, ChevronUp, ChevronDown, Folder } from 'lucide-react';
 import { DataCatalogSidebar } from './DataCatalogSidebar';
-import { rdsApi } from '../../lib/rdsApi';
 
 interface QueryTab {
   id: string;

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Plus, Calendar, Play, Pause, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 
 interface Job {
   id: string;

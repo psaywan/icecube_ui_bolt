@@ -10,7 +10,6 @@ import {
   Loader2,
   Eye
 } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 import { useAuth } from '../../contexts/RDSAuthContext';
 
 interface DataSource {

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { X, Server, Zap, Info, Settings2, HardDrive, Clock } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
-import { rdsApi } from '../../lib/rdsApi';
 
 type CloudProfile = Database['public']['Tables']['cloud_profiles']['Row'];
 

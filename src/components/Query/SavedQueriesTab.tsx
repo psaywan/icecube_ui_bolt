@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Search, Star, Trash2, Play, Copy, Calendar, Tag, FileText } from 'lucide-react';
-import { rdsApi } from '../../lib/rdsApi';
 
 interface SavedQuery {
   id: string;

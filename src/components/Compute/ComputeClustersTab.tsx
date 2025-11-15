@@ -3,7 +3,6 @@ import { Plus, Loader2 } from 'lucide-react';
 import { rdsApi } from '../../lib/rdsApi';
 import { ComputeClusterCard } from './ComputeClusterCard';
 import { CreateClusterModal } from './CreateClusterModal';
-import { rdsApi } from '../../lib/rdsApi';
 
 type ComputeCluster = Database['public']['Tables']['compute_clusters']['Row'];
 
