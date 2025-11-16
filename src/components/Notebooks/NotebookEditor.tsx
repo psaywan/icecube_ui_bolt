@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loader2, CheckCircle, AlertCircle, Code, FileText, Database, MoveUp, MoveDown, Link, GitBranch } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loader2, CheckCircle, AlertCircle, Code, FileText, Database, MoveUp, MoveDown, Link, GitBranch, Sparkles } from 'lucide-react';
 import { rdsApi } from '../../lib/rdsApi';
+import NotebookTemplateSelector from './NotebookTemplateSelector';
+import { NotebookBlockTemplate } from './NotebookBlockTemplates';
 
 interface NotebookEditorProps {
   notebookId: string;
@@ -43,6 +45,8 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [showClusterMenu, setShowClusterMenu] = useState(false);
   const [showGitMenu, setShowGitMenu] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [templateInsertIndex, setTemplateInsertIndex] = useState<number>(0);
   const textAreaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
 
   useEffect(() => {
@@ -127,6 +131,22 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
     newCells[index].content = content;
     setCells(newCells);
     autoResizeTextarea(cells[index].id);
+  };
+
+  const handleTemplateSelect = (template: NotebookBlockTemplate) => {
+    const cellType = template.language === 'sql' ? 'sql' : 'code';
+    const newCell: Cell = {
+      id: crypto.randomUUID(),
+      type: cellType,
+      content: template.code,
+    };
+    const newCells = [...cells];
+    newCells.splice(templateInsertIndex + 1, 0, newCell);
+    setCells(newCells);
+
+    setTimeout(() => {
+      autoResizeTextarea(newCell.id);
+    }, 50);
   };
 
   const autoResizeTextarea = (cellId: string) => {
@@ -408,6 +428,17 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
             <span>{saving ? 'Saving...' : 'Save'}</span>
           </button>
 
+          <button
+            onClick={() => {
+              setTemplateInsertIndex(cells.length - 1);
+              setShowTemplateSelector(true);
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition text-sm font-medium"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>AI Templates</span>
+          </button>
+
           <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition text-sm font-medium text-gray-700 dark:text-slate-300">
             <Download className="w-4 h-4" />
             <span>Export</span>
@@ -503,13 +534,42 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     >
                       <MoveDown className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => addCell(index, cell.type)}
-                      className="p-1.5 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 rounded transition"
-                      title="Add cell below"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    <div className="relative group">
+                      <button
+                        onClick={() => {
+                          setShowCellTypeMenu(showCellTypeMenu === index ? null : index);
+                        }}
+                        className="p-1.5 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 rounded transition"
+                        title="Add cell below"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      {showCellTypeMenu === index && (
+                        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-30 min-w-[180px]">
+                          <button
+                            onClick={() => {
+                              addCell(index, cell.type);
+                              setShowCellTypeMenu(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300"
+                          >
+                            <Code className="w-4 h-4 inline mr-2" />
+                            Empty Cell
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTemplateInsertIndex(index);
+                              setShowTemplateSelector(true);
+                              setShowCellTypeMenu(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 border-t border-gray-100 dark:border-slate-700"
+                          >
+                            <Sparkles className="w-4 h-4 inline mr-2" />
+                            From Template
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() => deleteCell(index)}
                       disabled={cells.length === 1}
@@ -613,6 +673,13 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
           </span>
         </div>
       </div>
+
+      {showTemplateSelector && (
+        <NotebookTemplateSelector
+          onSelectTemplate={handleTemplateSelect}
+          onClose={() => setShowTemplateSelector(false)}
+        />
+      )}
     </div>
   );
 }
