@@ -12,7 +12,7 @@ import ReactFlow, {
   BackgroundVariant,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Plus, Save, Play, FileJson, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, Save, Play, FileJson } from 'lucide-react';
 import NodePalette from './NodePalette';
 import NodeConfigModal from './NodeConfigModal';
 import CustomSourceNode from './nodes/CustomSourceNode';
@@ -47,8 +47,6 @@ export default function VisualETLCanvas({
   const [showPalette, setShowPalette] = useState(true);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [configNode, setConfigNode] = useState<Node | null>(null);
-  const [canvasHeight, setCanvasHeight] = useState(700);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -114,22 +112,13 @@ export default function VisualETLCanvas({
     a.click();
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    setCanvasHeight(isFullscreen ? 700 : window.innerHeight - 200);
-  };
-
-  const adjustHeight = (delta: number) => {
-    setCanvasHeight(prev => Math.max(400, Math.min(1200, prev + delta)));
-  };
-
   return (
-    <div className="space-y-3">
-      <div className={`bg-gray-50 rounded-xl border-2 border-gray-200 relative overflow-hidden transition-all duration-300`} style={{ height: `${canvasHeight}px` }}>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 relative overflow-hidden">
         <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
           <button
             onClick={() => setShowPalette(!showPalette)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center space-x-2"
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center space-x-2 text-gray-900 dark:text-white"
           >
             <Plus className="w-4 h-4" />
             <span className="text-sm font-medium">Add Nodes</span>
@@ -150,17 +139,10 @@ export default function VisualETLCanvas({
           </button>
           <button
             onClick={handleExportJSON}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center space-x-2"
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center space-x-2 text-gray-900 dark:text-white"
           >
             <FileJson className="w-4 h-4" />
             <span className="text-sm font-medium">Export JSON</span>
-          </button>
-          <button
-            onClick={toggleFullscreen}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center space-x-2"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
 
@@ -180,7 +162,7 @@ export default function VisualETLCanvas({
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
           fitView
-          className="bg-gray-50"
+          className="bg-gray-50 dark:bg-slate-900"
         >
           <Controls className="bg-white border border-gray-300 rounded-lg shadow-md" />
           <MiniMap
@@ -197,32 +179,16 @@ export default function VisualETLCanvas({
               <div className="w-24 h-24 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Plus className="w-12 h-12 text-cyan-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Build Your ETL Workflow</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Build Your ETL Workflow</h3>
+              <p className="text-gray-600 dark:text-slate-400">
                 Click "Add Nodes" to start adding sources, transformations, and targets
               </p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-500 dark:text-slate-500 mt-2">
                 Double-click any node to configure it
               </p>
             </div>
           </div>
         )}
-      </div>
-
-      <div className="flex items-center justify-center space-x-2">
-        <button
-          onClick={() => adjustHeight(-100)}
-          className="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 transition"
-        >
-          Decrease Height
-        </button>
-        <span className="text-sm text-gray-600">{canvasHeight}px</span>
-        <button
-          onClick={() => adjustHeight(100)}
-          className="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 transition"
-        >
-          Increase Height
-        </button>
       </div>
 
       {configNode && (
