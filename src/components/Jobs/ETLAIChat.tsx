@@ -95,7 +95,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-[600px]">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden flex flex-col h-full">
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 flex items-center space-x-3">
         <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
           <Sparkles className="w-6 h-6 text-white" />
@@ -106,7 +106,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900">
         {messages.map(message => (
           <div
             key={message.id}
@@ -126,7 +126,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
             <div className={`flex-1 ${message.type === 'user' ? 'flex justify-end' : ''}`}>
               <div className={`inline-block px-4 py-3 rounded-2xl max-w-[85%] ${
                 message.type === 'ai'
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
                   : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
               }`}>
                 <p className="text-sm leading-relaxed">{message.content}</p>
@@ -144,7 +144,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
               <Loader2 className="w-5 h-5 text-white animate-spin" />
             </div>
             <div className="flex-1">
-              <div className="inline-block px-4 py-3 bg-white rounded-2xl shadow-sm">
+              <div className="inline-block px-4 py-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                   <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -158,7 +158,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-200">
+      <div className="p-4 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
         <div className="flex flex-wrap gap-2 mb-3">
           {quickActions.map(action => (
             <button
@@ -178,7 +178,7 @@ export default function ETLAIChat({ onSendMessage, processing, currentStage }: E
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask AI to modify or enhance your pipeline..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+            className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-slate-700 dark:text-white text-sm"
             disabled={processing}
           />
           <button
