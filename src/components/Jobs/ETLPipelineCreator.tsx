@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Layout, Edit3, Save, Sparkles, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Layout, Edit3, Save, GripVertical } from 'lucide-react';
 import { getCurrentUser } from '../../lib/auth';
 import VisualETLCanvas from './VisualETLCanvas';
 import ETLFormBuilder from './ETLFormBuilder';
@@ -14,7 +14,6 @@ interface ETLPipelineCreatorProps {
 export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCreatorProps) {
   const [mode, setMode] = useState<'visual' | 'form'>(pipeline?.mode || 'visual');
   const [pipelineName, setPipelineName] = useState(pipeline?.name || 'New ETL Pipeline');
-  const [description, setDescription] = useState(pipeline?.description || '');
   const [workflowData, setWorkflowData] = useState(pipeline?.workflow_data || { nodes: [], edges: [] });
   const [formData, setFormData] = useState({
     sources: pipeline?.sources || [],
@@ -22,9 +21,42 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
     transformations: pipeline?.transformations || [],
     cloudServices: pipeline?.cloud_services || [],
   });
-  const [showChat, setShowChat] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiProcessing, setAiProcessing] = useState(false);
+  const [leftWidth, setLeftWidth] = useState(60);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !containerRef.current) return;
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+      if (newLeftWidth >= 30 && newLeftWidth <= 70) {
+        setLeftWidth(newLeftWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging]);
 
   const handleSave = async (autoSave = false) => {
     setSaving(true);
@@ -35,7 +67,7 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
       const pipelineData = {
         user_id: user.id,
         name: pipelineName,
-        description,
+        description: '',
         mode,
         workflow_data: mode === 'visual' ? workflowData : { nodes: [], edges: [] },
         sources: mode === 'form' ? formData.sources : extractSourcesFromWorkflow(),
@@ -104,25 +136,18 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
           <button
             onClick={onBack}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition"
+            className="flex items-center space-x-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Back to Pipelines</span>
           </button>
         </div>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition shadow-lg shadow-purple-500/20"
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span>{showChat ? 'Hide' : 'Show'} AI Assistant</span>
-          </button>
           <button
             onClick={() => handleSave(false)}
             disabled={saving}
@@ -134,65 +159,51 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Pipeline Name</label>
-            <input
-              type="text"
-              value={pipelineName}
-              onChange={(e) => setPipelineName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-              placeholder="e.g., Customer Data ETL Pipeline"
-            />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4 flex-1">
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                value={pipelineName}
+                onChange={(e) => setPipelineName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 dark:bg-slate-700 dark:text-white text-sm"
+                placeholder="Pipeline name"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setMode('visual')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition text-sm ${
+                  mode === 'visual'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                <Layout className="w-4 h-4" />
+                <span>Visual Workflow</span>
+              </button>
+              <button
+                onClick={() => setMode('form')}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition text-sm ${
+                  mode === 'form'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Form Builder</span>
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-              <span className="text-xs text-gray-500 ml-2">(Supports multiple lines)</span>
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-y"
-              placeholder="Describe the purpose of this ETL pipeline, data sources, transformations, and targets. You can write as much detail as needed..."
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {description.length} characters
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2 mb-4">
-          <span className="text-sm font-medium text-gray-700">Builder Mode:</span>
-          <button
-            onClick={() => setMode('visual')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
-              mode === 'visual'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Layout className="w-4 h-4" />
-            <span>Visual Workflow</span>
-          </button>
-          <button
-            onClick={() => setMode('form')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
-              mode === 'form'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Edit3 className="w-4 h-4" />
-            <span>Form Builder</span>
-          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div ref={containerRef} className="flex-1 flex gap-0 relative overflow-hidden">
+        <div
+          className="flex flex-col overflow-hidden"
+          style={{ width: `${leftWidth}%` }}
+        >
           {mode === 'visual' ? (
             <VisualETLCanvas
               pipelineName={pipelineName}
@@ -213,17 +224,24 @@ export default function ETLPipelineCreator({ pipeline, onBack }: ETLPipelineCrea
           )}
         </div>
 
-        {showChat && (
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <ETLAIChat
-                onSendMessage={handleAIMessage}
-                processing={aiProcessing}
-                currentStage="building"
-              />
-            </div>
-          </div>
-        )}
+        <div
+          className="w-1 bg-gray-300 dark:bg-slate-600 hover:bg-cyan-500 dark:hover:bg-cyan-500 cursor-col-resize relative group transition-colors flex items-center justify-center"
+          onMouseDown={() => setIsDragging(true)}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+          <GripVertical className="w-4 h-4 text-gray-400 dark:text-slate-500 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 pointer-events-none" />
+        </div>
+
+        <div
+          className="flex flex-col overflow-hidden"
+          style={{ width: `${100 - leftWidth}%` }}
+        >
+          <ETLAIChat
+            onSendMessage={handleAIMessage}
+            processing={aiProcessing}
+            currentStage="building"
+          />
+        </div>
       </div>
     </div>
   );

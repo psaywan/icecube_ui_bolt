@@ -112,16 +112,18 @@ export function Dashboard() {
     }
   };
 
+  const isFullHeightTab = activeTab === 'igo-etl';
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-slate-900">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto flex flex-col">
         <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10">
           <div className="px-8 py-4 flex justify-end">
             <UserProfileDropdown />
           </div>
         </div>
-        <div className="px-8 py-8">
+        <div className={isFullHeightTab ? 'flex-1 px-8 py-4 flex flex-col' : 'px-8 py-8'}>
           {renderContent()}
         </div>
       </main>
