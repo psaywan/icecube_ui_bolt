@@ -14,6 +14,7 @@ import { MonitoringTab } from './Monitoring/MonitoringTab';
 import { QueryEditorTab } from './Query/QueryEditorTab';
 import { SavedQueriesTab } from './Query/SavedQueriesTab';
 import DataSourcesTab from './DataSources/DataSourcesTab';
+import { RepositoriesTab } from './Repository/RepositoriesTab';
 
 function PlaceholderTab({ title, description }: { title: string; description: string }) {
   return (
@@ -59,9 +60,16 @@ export function Dashboard() {
       case 'notebooks':
         return <NotebooksTab />;
       case 'notebook-script':
-        return <PlaceholderTab title="Python Scripts" description="Manage your Python scripts" />;
+        return <PlaceholderTab title="Scripts" description="Manage your Python scripts" />;
       case 'notebook-store':
         return <PlaceholderTab title="Notebook Store" description="Browse and access all notebooks" />;
+
+      case 'repositories':
+      case 'repository-github':
+      case 'repository-gitlab':
+      case 'repository-bitbucket':
+      case 'repository-git':
+        return <RepositoriesTab />;
 
       case 'data-catalog':
         return <DataCatalogTab />;

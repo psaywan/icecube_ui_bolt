@@ -14,7 +14,8 @@ import {
   Lock,
   Unlock,
   Home,
-  FolderOpen
+  FolderOpen,
+  GitBranch
 } from 'lucide-react';
 import { useAuth } from '../../contexts/RDSAuthContext';
 
@@ -83,6 +84,18 @@ const menuItems: MenuItem[] = [
       { label: 'Notebook', route: 'notebooks' },
       { label: 'Scripts', route: 'notebook-script' },
       { label: 'Notebook Store', route: 'notebook-store' }
+    ]
+  },
+  {
+    id: 'repository',
+    label: 'Repository',
+    icon: GitBranch,
+    children: [
+      { label: 'Connected Repos', route: 'repositories' },
+      { label: 'Connect GitHub', route: 'repository-github' },
+      { label: 'Connect GitLab', route: 'repository-gitlab' },
+      { label: 'Connect Bitbucket', route: 'repository-bitbucket' },
+      { label: 'Generic Git', route: 'repository-git' }
     ]
   },
   {

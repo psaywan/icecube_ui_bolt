@@ -326,4 +326,40 @@ export const rdsApi = {
       });
     },
   },
+
+  repositories: {
+    async getAll() {
+      return fetchWithAuth('/repositories');
+    },
+
+    async getById(id: string) {
+      return fetchWithAuth(`/repositories/${id}`);
+    },
+
+    async create(data: any) {
+      return fetchWithAuth('/repositories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async update(id: string, data: any) {
+      return fetchWithAuth(`/repositories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async delete(id: string) {
+      return fetchWithAuth(`/repositories/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    async sync(id: string) {
+      return fetchWithAuth(`/repositories/${id}/sync`, {
+        method: 'POST',
+      });
+    },
+  },
 };
