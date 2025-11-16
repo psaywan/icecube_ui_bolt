@@ -239,6 +239,10 @@ export const rdsApi = {
       return fetchWithAuth('/notebooks');
     },
 
+    async getById(id: string) {
+      return fetchWithAuth(`/notebooks/${id}`);
+    },
+
     async create(data: any) {
       return fetchWithAuth('/notebooks', {
         method: 'POST',
@@ -256,6 +260,13 @@ export const rdsApi = {
     async delete(id: string) {
       return fetchWithAuth(`/notebooks/${id}`, {
         method: 'DELETE',
+      });
+    },
+
+    async executeCell(data: { notebookId: string; cellId: string; code: string; language: string }) {
+      return fetchWithAuth('/notebooks/execute', {
+        method: 'POST',
+        body: JSON.stringify(data),
       });
     },
   },

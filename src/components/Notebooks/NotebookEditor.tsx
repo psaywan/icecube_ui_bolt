@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loader2, CheckCircle, AlertCircle, Code, FileText, Database, MoveUp, MoveDown, Link } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loader2, CheckCircle, AlertCircle, Code, FileText, Database, MoveUp, MoveDown, Link, GitBranch } from 'lucide-react';
+import { rdsApi } from '../../lib/rdsApi';
 
 interface NotebookEditorProps {
   notebookId: string;
@@ -41,6 +42,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
   const [showCellTypeMenu, setShowCellTypeMenu] = useState<number | null>(null);
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [showClusterMenu, setShowClusterMenu] = useState(false);
+  const [showGitMenu, setShowGitMenu] = useState(false);
   const textAreaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
 
   useEffect(() => {
@@ -49,18 +51,8 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
   }, [notebookId]);
 
   const fetchNotebook = async () => {
-    const { data, error } = await supabase
-      .from('notebooks')
-      .select('*')
-      .eq('id', notebookId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching notebook:', error);
-      return;
-    }
-
-    if (data) {
+    try {
+      const data = await rdsApi.notebooks.getById(notebookId);
       setNotebook(data);
       const notebookCells = data.content?.cells || [];
       if (notebookCells.length === 0) {
@@ -72,18 +64,19 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
       } else {
         setCells(notebookCells);
       }
+    } catch (error) {
+      console.error('Error fetching notebook:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchClusters = async () => {
-    const { data } = await supabase
-      .from('clusters')
-      .select('id, name, status')
-      .order('name');
-
-    if (data) {
+    try {
+      const data = await rdsApi.computeClusters.getAll();
       setClusters(data);
+    } catch (error) {
+      console.error('Error fetching clusters:', error);
     }
   };
 
@@ -91,20 +84,16 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
     if (!notebook) return;
 
     setSaving(true);
-    const { error } = await supabase
-      .from('notebooks')
-      .update({
+    try {
+      await rdsApi.notebooks.update(notebookId, {
         content: { cells },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', notebookId);
-
-    if (error) {
-      console.error('Error saving notebook:', error);
-    } else {
+      });
       setLastSaved(new Date());
+    } catch (error) {
+      console.error('Error saving notebook:', error);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const addCell = (index: number, type: 'code' | 'markdown' | 'sql' = 'code') => {
@@ -117,7 +106,6 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
     newCells.splice(index + 1, 0, newCell);
     setCells(newCells);
 
-    // Focus on the new cell after state update
     setTimeout(() => {
       const newTextarea = textAreaRefs.current[newCell.id];
       if (newTextarea) {
@@ -152,14 +140,12 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
   const connectToCluster = async (clusterId: string | null) => {
     if (!notebook) return;
 
-    const { error } = await supabase
-      .from('notebooks')
-      .update({ cluster_id: clusterId })
-      .eq('id', notebookId);
-
-    if (!error) {
+    try {
+      await rdsApi.notebooks.update(notebookId, { cluster_id: clusterId });
       setNotebook({ ...notebook, cluster_id: clusterId });
       setShowClusterMenu(false);
+    } catch (error) {
+      console.error('Error connecting to cluster:', error);
     }
   };
 
@@ -192,67 +178,23 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
     setCells([...newCells]);
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      let endpoint = '';
-      let payload: any = {
-        notebookId,
-        cellId: cells[index].id,
-      };
-
       const cellType = cells[index].type;
       const language = cellType === 'sql' ? 'sql' : notebook.language;
 
-      switch (language) {
-        case 'sql':
-          endpoint = `${supabaseUrl}/functions/v1/execute-sql`;
-          payload.query = cells[index].content;
-          break;
-        case 'python':
-          endpoint = `${supabaseUrl}/functions/v1/execute-python`;
-          payload.code = cells[index].content;
-          break;
-        case 'scala':
-          endpoint = `${supabaseUrl}/functions/v1/execute-scala`;
-          payload.code = cells[index].content;
-          break;
-        case 'r':
-          endpoint = `${supabaseUrl}/functions/v1/execute-r`;
-          payload.code = cells[index].content;
-          break;
-        default:
-          throw new Error(`Unsupported language: ${language}`);
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session?.access_token || supabaseAnonKey}`,
-        },
-        body: JSON.stringify(payload),
+      const startTime = Date.now();
+      const result = await rdsApi.notebooks.executeCell({
+        notebookId,
+        cellId: cells[index].id,
+        code: cells[index].content,
+        language,
       });
-
-      const result = await response.json();
+      const executionTime = Date.now() - startTime;
 
       newCells[index].executing = false;
 
       if (result.success) {
-        if (language === 'sql') {
-          const data = result.data;
-          if (data.simulated) {
-            newCells[index].output = formatSQLOutput(data.rows);
-          } else if (data.rows && data.rows.length > 0) {
-            newCells[index].output = formatSQLOutput(data.rows);
-          } else {
-            newCells[index].output = `Query executed successfully.\nRows affected: ${data.rowCount || 0}`;
-          }
-        } else {
-          newCells[index].output = result.output || 'Execution completed successfully';
-        }
-        newCells[index].executionTime = result.executionTime;
+        newCells[index].output = result.output || 'Execution completed successfully';
+        newCells[index].executionTime = executionTime;
       } else {
         newCells[index].error = result.error || 'Execution failed';
         newCells[index].output = result.output || result.error;
@@ -262,38 +204,9 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
     } catch (error: any) {
       newCells[index].executing = false;
       newCells[index].error = error.message || 'Execution failed';
-      newCells[index].output = `Error: ${error.message}\n\nPlease check your code and try again.`;
+      newCells[index].output = `Error: ${error.message}\n\nNote: Code execution requires backend API support.`;
       setCells([...newCells]);
     }
-  };
-
-  const formatSQLOutput = (rows: any[]) => {
-    if (!rows || rows.length === 0) {
-      return 'No rows returned';
-    }
-
-    const headers = Object.keys(rows[0]);
-    const maxWidths = headers.map(header => {
-      const values = rows.map(row => String(row[header] || ''));
-      return Math.max(header.length, ...values.map(v => v.length));
-    });
-
-    const separator = '+-' + maxWidths.map(w => '-'.repeat(w)).join('-+-') + '-+';
-    const headerRow = '| ' + headers.map((h, i) => h.padEnd(maxWidths[i])).join(' | ') + ' |';
-    const dataRows = rows.slice(0, 100).map(row =>
-      '| ' + headers.map((h, i) => String(row[h] || '').padEnd(maxWidths[i])).join(' | ') + ' |'
-    );
-
-    const output = [
-      separator,
-      headerRow,
-      separator,
-      ...dataRows,
-      separator,
-      `\n${rows.length} row(s) returned${rows.length > 100 ? ' (showing first 100)' : ''}`,
-    ].join('\n');
-
-    return output;
   };
 
   const executeAllCells = async () => {
@@ -351,7 +264,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading notebook...</p>
+          <p className="text-gray-600 dark:text-slate-400">Loading notebook...</p>
         </div>
       </div>
     );
@@ -363,19 +276,19 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-4">
           <button
             onClick={onClose}
-            className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition"
+            className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium text-gray-700">Back</span>
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-slate-300" />
+            <span className="font-medium text-gray-700 dark:text-slate-300">Back</span>
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{notebook.name}</h1>
-            <div className="flex items-center space-x-2 text-sm text-gray-600 mt-0.5">
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{notebook.name}</h1>
+            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-slate-400 mt-0.5">
+              <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
                 {getLanguageName()}
               </span>
             </div>
@@ -386,8 +299,8 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
               onClick={() => setShowClusterMenu(!showClusterMenu)}
               className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition text-sm font-medium ${
                 notebook.cluster_id
-                  ? 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-800 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50'
+                  : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
               }`}
             >
               <Link className="w-4 h-4" />
@@ -400,25 +313,25 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
             </button>
 
             {showClusterMenu && (
-              <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-20 min-w-[280px]">
-                <div className="px-3 py-2 border-b border-gray-200 bg-gray-50">
-                  <p className="text-xs font-semibold text-gray-700">Attach to Cluster</p>
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-20 min-w-[280px]">
+                <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-slate-300">Attach to Cluster</p>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
                   {notebook.cluster_id && (
                     <button
                       onClick={() => connectToCluster(null)}
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center space-x-2 border-b border-gray-100"
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center space-x-2 border-b border-gray-100 dark:border-slate-700"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">Detach Cluster</div>
-                        <div className="text-xs text-gray-500">Run without cluster</div>
+                        <div className="font-medium text-gray-900 dark:text-white">Detach Cluster</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400">Run without cluster</div>
                       </div>
                     </button>
                   )}
                   {clusters.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-gray-500">
-                      <Server className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-slate-400">
+                      <Server className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-slate-500" />
                       <p>No clusters available</p>
                       <p className="text-xs mt-1">Create a cluster first</p>
                     </div>
@@ -427,8 +340,8 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                       <button
                         key={cluster.id}
                         onClick={() => connectToCluster(cluster.id)}
-                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center space-x-3 ${
-                          notebook.cluster_id === cluster.id ? 'bg-green-50' : ''
+                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center space-x-3 ${
+                          notebook.cluster_id === cluster.id ? 'bg-green-50 dark:bg-green-900/20' : ''
                         }`}
                       >
                         <div
@@ -441,16 +354,41 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                           }`}
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-gray-900">{cluster.name}</div>
-                          <div className="text-xs text-gray-500 capitalize">{cluster.status}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">{cluster.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400 capitalize">{cluster.status}</div>
                         </div>
                         {notebook.cluster_id === cluster.id && (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
                         )}
                       </button>
                     ))
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowGitMenu(!showGitMenu)}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 rounded-lg transition text-sm font-medium text-gray-700 dark:text-slate-300"
+            >
+              <GitBranch className="w-4 h-4" />
+              <span>Git</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            {showGitMenu && (
+              <div className="absolute top-full right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl z-20 min-w-[200px]">
+                <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300">
+                  Push to Repository
+                </button>
+                <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300">
+                  Pull from Repository
+                </button>
+                <button className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border-t border-gray-100 dark:border-slate-700">
+                  Configure Git Settings
+                </button>
               </div>
             )}
           </div>
@@ -460,7 +398,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
           <button
             onClick={saveNotebook}
             disabled={saving}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm font-medium disabled:opacity-50"
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition text-sm font-medium disabled:opacity-50 text-gray-700 dark:text-slate-300"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -470,7 +408,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
             <span>{saving ? 'Saving...' : 'Save'}</span>
           </button>
 
-          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg transition text-sm font-medium">
+          <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition text-sm font-medium text-gray-700 dark:text-slate-300">
             <Download className="w-4 h-4" />
             <span>Export</span>
           </button>
@@ -485,23 +423,23 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-gray-50" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-900" style={{ height: 'calc(100vh - 180px)' }}>
         <div className="max-w-6xl mx-auto py-4 px-4">
           {cells.map((cell, index) => (
             <div
               key={cell.id}
               className="mb-2 group"
             >
-              <div className="bg-white rounded-lg border border-gray-200 hover:border-cyan-400 hover:shadow-md transition-all">
-                <div className="flex items-center px-3 py-2 border-b border-gray-100 bg-gray-50">
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 hover:border-cyan-400 dark:hover:border-cyan-600 hover:shadow-md transition-all">
+                <div className="flex items-center px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
                   <div className="flex items-center space-x-2 flex-1">
-                    <span className="text-xs font-mono text-gray-400 min-w-[32px]">
+                    <span className="text-xs font-mono text-gray-400 dark:text-slate-500 min-w-[32px]">
                       [{index + 1}]
                     </span>
                     <div className="relative">
                       <button
                         onClick={() => setShowCellTypeMenu(showCellTypeMenu === index ? null : index)}
-                        className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded transition"
+                        className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded transition"
                       >
                         {getCellTypeIcon(cell.type)}
                         <span>{getCellTypeName(cell.type)}</span>
@@ -509,24 +447,24 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                       </button>
 
                       {showCellTypeMenu === index && (
-                        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[140px]">
                           <button
                             onClick={() => changeCellType(index, 'code')}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                           >
                             <Code className="w-4 h-4" />
                             <span>Code</span>
                           </button>
                           <button
                             onClick={() => changeCellType(index, 'sql')}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                           >
                             <Database className="w-4 h-4" />
                             <span>SQL</span>
                           </button>
                           <button
                             onClick={() => changeCellType(index, 'markdown')}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
                           >
                             <FileText className="w-4 h-4" />
                             <span>Markdown</span>
@@ -540,7 +478,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     <button
                       onClick={() => executeCell(index)}
                       disabled={cell.executing || cell.type === 'markdown'}
-                      className="p-1.5 text-green-600 hover:bg-green-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
                       title="Run cell (Shift+Enter: run & create new | Ctrl/Cmd+Enter: run only)"
                     >
                       {cell.executing ? (
@@ -552,7 +490,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     <button
                       onClick={() => moveCell(index, 'up')}
                       disabled={index === 0}
-                      className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition disabled:opacity-30"
+                      className="p-1.5 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition disabled:opacity-30"
                       title="Move up"
                     >
                       <MoveUp className="w-4 h-4" />
@@ -560,14 +498,14 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     <button
                       onClick={() => moveCell(index, 'down')}
                       disabled={index === cells.length - 1}
-                      className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition disabled:opacity-30"
+                      className="p-1.5 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition disabled:opacity-30"
                       title="Move down"
                     >
                       <MoveDown className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => addCell(index, cell.type)}
-                      className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded transition"
+                      className="p-1.5 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 rounded transition"
                       title="Add cell below"
                     >
                       <Plus className="w-4 h-4" />
@@ -575,7 +513,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     <button
                       onClick={() => deleteCell(index)}
                       disabled={cells.length === 1}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
                       title="Delete cell"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -607,33 +545,33 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                       }
                     }}
                     placeholder={getPlaceholder(cell)}
-                    className="w-full min-h-[80px] font-mono text-sm bg-transparent border-none outline-none resize-y text-gray-800 placeholder-gray-400"
+                    className="w-full min-h-[80px] font-mono text-sm bg-transparent border-none outline-none resize-y text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500"
                     style={{ lineHeight: '1.5', overflow: 'hidden' }}
                   />
                 </div>
 
                 {cell.executing && (
-                  <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                    <span className="text-sm text-blue-700 font-medium">Executing...</span>
+                  <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-800 flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">Executing...</span>
                   </div>
                 )}
 
                 {cell.error && !cell.executing && (
-                  <div className="border-t border-red-200 bg-red-50">
-                    <div className="px-4 py-2 flex items-center space-x-2 border-b border-red-200">
-                      <AlertCircle className="w-4 h-4 text-red-600" />
-                      <span className="text-sm font-semibold text-red-800">Error</span>
+                  <div className="border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                    <div className="px-4 py-2 flex items-center space-x-2 border-b border-red-200 dark:border-red-800">
+                      <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      <span className="text-sm font-semibold text-red-800 dark:text-red-300">Error</span>
                     </div>
                     <div className="px-4 py-3 max-h-64 overflow-auto">
-                      <pre className="text-xs font-mono text-red-700 whitespace-pre-wrap">{cell.output}</pre>
+                      <pre className="text-xs font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap">{cell.output}</pre>
                     </div>
                   </div>
                 )}
 
                 {cell.output && !cell.executing && !cell.error && (
-                  <div className="border-t border-gray-200">
-                    <div className="px-4 py-2 bg-gray-800 flex items-center justify-between">
+                  <div className="border-t border-gray-200 dark:border-slate-700">
+                    <div className="px-4 py-2 bg-gray-800 dark:bg-slate-950 flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <CheckCircle className="w-4 h-4 text-green-400" />
                         <span className="text-xs font-semibold text-green-400">Output</span>
@@ -644,7 +582,7 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                         </span>
                       )}
                     </div>
-                    <div className="px-4 py-3 bg-gray-900 max-h-80 overflow-auto">
+                    <div className="px-4 py-3 bg-gray-900 dark:bg-slate-950 max-h-80 overflow-auto">
                       <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap leading-relaxed">
                         {cell.output}
                       </pre>
@@ -657,20 +595,20 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
 
           <button
             onClick={() => addCell(cells.length - 1)}
-            className="w-full py-4 mt-2 border-2 border-dashed border-gray-300 hover:border-cyan-400 hover:bg-cyan-50 rounded-lg transition text-gray-500 hover:text-cyan-600 font-medium text-sm"
+            className="w-full py-4 mt-2 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-cyan-400 dark:hover:border-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg transition text-gray-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium text-sm"
           >
             + Add Cell
           </button>
         </div>
       </div>
 
-      <div className="bg-white border-t border-gray-200 px-6 py-2 flex items-center justify-between text-xs text-gray-600">
+      <div className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 px-6 py-2 flex items-center justify-between text-xs text-gray-600 dark:text-slate-400">
         <div className="flex items-center space-x-4">
           <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
           <span>{cells.length} cells</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="px-2 py-1 bg-green-100 text-green-700 rounded font-medium">
+          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded font-medium">
             Ready
           </span>
         </div>
