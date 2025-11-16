@@ -87,16 +87,10 @@ const menuItems: MenuItem[] = [
     ]
   },
   {
-    id: 'repository',
-    label: 'Repository',
+    id: 'repos',
+    label: 'Repos',
     icon: GitBranch,
-    children: [
-      { label: 'Connected Repos', route: 'repositories' },
-      { label: 'Connect GitHub', route: 'repository-github' },
-      { label: 'Connect GitLab', route: 'repository-gitlab' },
-      { label: 'Connect Bitbucket', route: 'repository-bitbucket' },
-      { label: 'Generic Git', route: 'repository-git' }
-    ]
+    route: 'repositories'
   },
   {
     id: 'data',

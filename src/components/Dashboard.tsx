@@ -65,10 +65,6 @@ export function Dashboard() {
         return <PlaceholderTab title="Notebook Store" description="Browse and access all notebooks" />;
 
       case 'repositories':
-      case 'repository-github':
-      case 'repository-gitlab':
-      case 'repository-bitbucket':
-      case 'repository-git':
         return <RepositoriesTab />;
 
       case 'data-catalog':
