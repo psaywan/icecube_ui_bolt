@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Cloud, AlertCircle, ChevronDown } from 'lucide-react';
+import { X, Cloud, AlertCircle, ChevronDown, Settings } from 'lucide-react';
 import { CloudIcon } from '../Common/CloudIcon';
 import { rdsApi } from '../../lib/rdsApi';
 
@@ -16,10 +16,13 @@ interface CreateWorkspaceModalProps {
   onSuccess: () => void;
 }
 
+type Provider = 'aws' | 'azure' | 'gcp';
+
 export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorkspaceModalProps) {
-  const [step, setStep] = useState<'profile' | 'config'>('profile');
+  const [step, setStep] = useState<'select-method' | 'config'>('select-method');
   const [cloudProfiles, setCloudProfiles] = useState<CloudProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<CloudProfile | null>(null);
+  const [manualProvider, setManualProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,6 +37,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
   const [awsConfig, setAwsConfig] = useState({
     crossAccountRoleArn: '',
+    region: 'us-east-1',
     vpcCidr: '10.0.0.0/16',
     rootS3Bucket: '',
     createVpc: true,
@@ -46,6 +50,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
   const [azureConfig, setAzureConfig] = useState({
     subscriptionId: '',
     resourceGroup: '',
+    region: 'eastus',
     vnetCidr: '10.0.0.0/16',
     createVnet: true,
     storageAccountName: '',
@@ -54,6 +59,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
   const [gcpConfig, setGcpConfig] = useState({
     projectId: '',
+    region: 'us-central1',
     network: '',
     subnetCidr: '10.0.0.0/16',
     createNetwork: true,
@@ -80,6 +86,13 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
   const handleProfileSelect = (profile: CloudProfile) => {
     setSelectedProfile(profile);
+    setManualProvider(null);
+    setStep('config');
+  };
+
+  const handleManualProviderSelect = (provider: Provider) => {
+    setManualProvider(provider);
+    setSelectedProfile(null);
     setStep('config');
   };
 
@@ -89,23 +102,33 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     setLoading(true);
 
     try {
-      if (!selectedProfile) {
-        throw new Error('Please select a cloud profile');
+      const provider = selectedProfile?.provider || manualProvider;
+      if (!provider) {
+        throw new Error('Please select a provider');
       }
 
       let config = {};
-      if (selectedProfile.provider === 'aws') {
+      if (provider === 'aws') {
+        if (!awsConfig.crossAccountRoleArn) {
+          throw new Error('AWS Role ARN is required');
+        }
         config = awsConfig;
-      } else if (selectedProfile.provider === 'azure') {
+      } else if (provider === 'azure') {
+        if (!azureConfig.subscriptionId || !azureConfig.resourceGroup) {
+          throw new Error('Azure Subscription ID and Resource Group are required');
+        }
         config = azureConfig;
-      } else if (selectedProfile.provider === 'gcp') {
+      } else if (provider === 'gcp') {
+        if (!gcpConfig.projectId) {
+          throw new Error('GCP Project ID is required');
+        }
         config = gcpConfig;
       }
 
       await rdsApi.workspaces.create({
         ...formData,
-        cloud_profile_id: selectedProfile.id,
-        provider: selectedProfile.provider,
+        cloud_profile_id: selectedProfile?.id || null,
+        provider,
         config,
       });
 
@@ -120,8 +143,9 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
   };
 
   const resetForm = () => {
-    setStep('profile');
+    setStep('select-method');
     setSelectedProfile(null);
+    setManualProvider(null);
     setFormData({
       name: '',
       description: '',
@@ -132,6 +156,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     });
     setAwsConfig({
       crossAccountRoleArn: '',
+      region: 'us-east-1',
       vpcCidr: '10.0.0.0/16',
       rootS3Bucket: '',
       createVpc: true,
@@ -140,54 +165,121 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
       enableEfs: false,
       enableEbs: true,
     });
+    setAzureConfig({
+      subscriptionId: '',
+      resourceGroup: '',
+      region: 'eastus',
+      vnetCidr: '10.0.0.0/16',
+      createVnet: true,
+      storageAccountName: '',
+      enableManagedIdentity: true,
+    });
+    setGcpConfig({
+      projectId: '',
+      region: 'us-central1',
+      network: '',
+      subnetCidr: '10.0.0.0/16',
+      createNetwork: true,
+      gcsBucket: '',
+      serviceAccountEmail: '',
+    });
   };
 
-  const renderProfileSelection = () => (
+  const renderMethodSelection = () => (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          Select Cloud Profile
+          Choose Setup Method
         </h3>
-        <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
-          Choose the cloud profile where you want to deploy your workspace
+        <p className="text-sm text-gray-600 dark:text-slate-400 mb-6">
+          Use a saved cloud profile or manually configure credentials
         </p>
 
-        {cloudProfiles.length === 0 ? (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-3" />
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">No Cloud Profiles Found</h4>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mb-4">
-              You need to create a cloud profile before creating a workspace.
-            </p>
-            <button
-              onClick={() => {
-                onClose();
-              }}
-              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition"
-            >
-              Go to Cloud Profiles
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {cloudProfiles.map((profile) => (
-              <button
-                key={profile.id}
-                onClick={() => handleProfileSelect(profile)}
-                className="flex items-center space-x-4 p-4 bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-400 transition group"
-              >
-                <CloudIcon provider={profile.provider} size="lg" />
-                <div className="flex-1 text-left">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">{profile.name}</h4>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">
-                    {profile.provider.toUpperCase()} • {profile.region}
-                  </p>
-                </div>
-                <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90 group-hover:text-cyan-600" />
-              </button>
-            ))}
+        {cloudProfiles.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">
+              Use Existing Cloud Profile
+            </h4>
+            <div className="grid grid-cols-1 gap-3">
+              {cloudProfiles.map((profile) => (
+                <button
+                  key={profile.id}
+                  onClick={() => handleProfileSelect(profile)}
+                  className="flex items-center space-x-4 p-4 bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-400 transition group"
+                >
+                  <CloudIcon provider={profile.provider} size="lg" />
+                  <div className="flex-1 text-left">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{profile.name}</h4>
+                    <p className="text-sm text-gray-600 dark:text-slate-400">
+                      {profile.provider.toUpperCase()} • {profile.region}
+                    </p>
+                  </div>
+                  <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90 group-hover:text-cyan-600" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300 dark:border-slate-600"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400">
+              Or configure manually
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">
+            Manual Configuration
+          </h4>
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => handleManualProviderSelect('aws')}
+              className="flex items-center space-x-4 p-4 bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-400 transition group"
+            >
+              <CloudIcon provider="aws" size="lg" />
+              <div className="flex-1 text-left">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Amazon Web Services</h4>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Configure with IAM Role ARN
+                </p>
+              </div>
+              <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90 group-hover:text-cyan-600" />
+            </button>
+
+            <button
+              onClick={() => handleManualProviderSelect('azure')}
+              className="flex items-center space-x-4 p-4 bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-400 transition group"
+            >
+              <CloudIcon provider="azure" size="lg" />
+              <div className="flex-1 text-left">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Microsoft Azure</h4>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Configure with Subscription ID
+                </p>
+              </div>
+              <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90 group-hover:text-cyan-600" />
+            </button>
+
+            <button
+              onClick={() => handleManualProviderSelect('gcp')}
+              className="flex items-center space-x-4 p-4 bg-white dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-cyan-500 dark:hover:border-cyan-400 transition group"
+            >
+              <CloudIcon provider="gcp" size="lg" />
+              <div className="flex-1 text-left">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Google Cloud Platform</h4>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Configure with Project ID
+                </p>
+              </div>
+              <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90 group-hover:text-cyan-600" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -209,6 +301,22 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
         <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
           IAM role with permissions to create workspace resources
         </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          AWS Region *
+        </label>
+        <select
+          value={awsConfig.region}
+          onChange={(e) => setAwsConfig({ ...awsConfig, region: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+        >
+          <option value="us-east-1">US East (N. Virginia)</option>
+          <option value="us-west-2">US West (Oregon)</option>
+          <option value="eu-west-1">EU (Ireland)</option>
+          <option value="ap-south-1">Asia Pacific (Mumbai)</option>
+        </select>
       </div>
 
       <div>
@@ -325,6 +433,22 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Azure Region *
+        </label>
+        <select
+          value={azureConfig.region}
+          onChange={(e) => setAzureConfig({ ...azureConfig, region: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+        >
+          <option value="eastus">East US</option>
+          <option value="westus2">West US 2</option>
+          <option value="westeurope">West Europe</option>
+          <option value="southeastasia">Southeast Asia</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
           VNet CIDR Block
         </label>
         <input
@@ -393,6 +517,22 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          GCP Region *
+        </label>
+        <select
+          value={gcpConfig.region}
+          onChange={(e) => setGcpConfig({ ...gcpConfig, region: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+        >
+          <option value="us-central1">US Central 1</option>
+          <option value="us-west1">US West 1</option>
+          <option value="europe-west1">Europe West 1</option>
+          <option value="asia-south1">Asia South 1</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
           VPC Network Name
         </label>
         <input
@@ -457,75 +597,81 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     </div>
   );
 
-  const renderWorkspaceConfig = () => (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-3 pb-4 border-b border-gray-200 dark:border-slate-700">
-        <button
-          onClick={() => setStep('profile')}
-          className="text-cyan-600 dark:text-cyan-400 hover:underline text-sm"
-        >
-          ← Change Profile
-        </button>
-        {selectedProfile && (
+  const renderWorkspaceConfig = () => {
+    const provider = selectedProfile?.provider || manualProvider;
+    const providerName = selectedProfile?.name ||
+      (provider === 'aws' ? 'Amazon Web Services' :
+       provider === 'azure' ? 'Microsoft Azure' :
+       'Google Cloud Platform');
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-3 pb-4 border-b border-gray-200 dark:border-slate-700">
+          <button
+            onClick={() => setStep('select-method')}
+            className="text-cyan-600 dark:text-cyan-400 hover:underline text-sm"
+          >
+            ← Change Method
+          </button>
           <div className="flex items-center space-x-2">
-            <CloudIcon provider={selectedProfile.provider} size="sm" />
+            {provider && <CloudIcon provider={provider} size="sm" />}
             <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-              {selectedProfile.name}
+              {providerName}
             </span>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-          Workspace Name *
-        </label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
-          placeholder="Production Workspace"
-          required
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+            Workspace Name *
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+            placeholder="Production Workspace"
+            required
+          />
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-          Description
-        </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
-          rows={3}
-          placeholder="Describe your workspace..."
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+            Description
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+            rows={3}
+            placeholder="Describe your workspace..."
+          />
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-          Category
-        </label>
-        <input
-          type="text"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
-          placeholder="e.g., Production, Development, Testing"
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+            Category
+          </label>
+          <input
+            type="text"
+            value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500 dark:bg-slate-700 dark:text-white"
+            placeholder="e.g., Production, Development, Testing"
+          />
+        </div>
 
-      <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {selectedProfile?.provider.toUpperCase()} Configuration
-        </h3>
-        {selectedProfile?.provider === 'aws' && renderAWSConfig()}
-        {selectedProfile?.provider === 'azure' && renderAzureConfig()}
-        {selectedProfile?.provider === 'gcp' && renderGCPConfig()}
+        <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {provider?.toUpperCase()} Configuration
+          </h3>
+          {provider === 'aws' && renderAWSConfig()}
+          {provider === 'azure' && renderAzureConfig()}
+          {provider === 'gcp' && renderGCPConfig()}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -538,7 +684,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
             <div>
               <h2 className="text-2xl font-bold">Create Workspace</h2>
               <p className="text-white/80 text-sm">
-                {step === 'profile' ? 'Select cloud profile' : 'Configure workspace settings'}
+                {step === 'select-method' ? 'Select cloud provider' : 'Configure workspace settings'}
               </p>
             </div>
           </div>
@@ -558,7 +704,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
             </div>
           )}
 
-          {step === 'profile' ? renderProfileSelection() : renderWorkspaceConfig()}
+          {step === 'select-method' ? renderMethodSelection() : renderWorkspaceConfig()}
 
           {step === 'config' && (
             <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700 mt-6">
