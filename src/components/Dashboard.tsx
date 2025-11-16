@@ -37,7 +37,7 @@ export function Dashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeTab />;
+        return <HomeTab onNavigate={setActiveTab} />;
 
       case 'cloud-profiles':
       case 'cloud-profiles-aws':

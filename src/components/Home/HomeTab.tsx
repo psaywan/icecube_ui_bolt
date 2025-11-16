@@ -4,7 +4,11 @@ import {
   FolderOpen, GitBranch, Box, ArrowRight, Sparkles
 } from 'lucide-react';
 
-export function HomeTab() {
+interface HomeTabProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export function HomeTab({ onNavigate }: HomeTabProps = {}) {
   const stats = [
     { label: 'Active Clusters', value: '12', change: '+3', trend: 'up', icon: Server, color: 'from-blue-500 to-cyan-600' },
     { label: 'Running Jobs', value: '8', change: '+2', trend: 'up', icon: Activity, color: 'from-green-500 to-emerald-600' },
@@ -21,12 +25,12 @@ export function HomeTab() {
   ];
 
   const quickActions = [
-    { title: 'New Notebook', desc: 'Create notebook', icon: FileCode, color: 'cyan', gradient: 'from-cyan-500 to-blue-600' },
-    { title: 'Launch Cluster', desc: 'Start compute', icon: Server, color: 'green', gradient: 'from-green-500 to-emerald-600' },
-    { title: 'Query Editor', desc: 'Run SQL queries', icon: Database, color: 'blue', gradient: 'from-blue-500 to-indigo-600' },
-    { title: 'Create Job', desc: 'Schedule workflow', icon: Zap, color: 'violet', gradient: 'from-violet-500 to-purple-600' },
-    { title: 'Data Catalog', desc: 'Browse data', icon: FolderOpen, color: 'amber', gradient: 'from-amber-500 to-orange-600' },
-    { title: 'Build Pipeline', desc: 'ETL workflow', icon: GitBranch, color: 'pink', gradient: 'from-pink-500 to-rose-600' },
+    { title: 'New Notebook', desc: 'Create notebook', icon: FileCode, color: 'cyan', gradient: 'from-cyan-500 to-blue-600', navigate: 'notebooks' },
+    { title: 'Launch Cluster', desc: 'Start compute', icon: Server, color: 'green', gradient: 'from-green-500 to-emerald-600', navigate: 'compute' },
+    { title: 'Query Editor', desc: 'Run SQL queries', icon: Database, color: 'blue', gradient: 'from-blue-500 to-indigo-600', navigate: 'query-editor' },
+    { title: 'Create Job', desc: 'Schedule workflow', icon: Zap, color: 'violet', gradient: 'from-violet-500 to-purple-600', navigate: 'jobs' },
+    { title: 'Data Catalog', desc: 'Browse data', icon: FolderOpen, color: 'amber', gradient: 'from-amber-500 to-orange-600', navigate: 'data-catalog' },
+    { title: 'Build Pipeline', desc: 'ETL workflow', icon: GitBranch, color: 'pink', gradient: 'from-pink-500 to-rose-600', navigate: 'igo-etl' },
   ];
 
   const recentNotebooks = [
@@ -91,6 +95,7 @@ export function HomeTab() {
               return (
                 <button
                   key={index}
+                  onClick={() => onNavigate?.(action.navigate)}
                   className="group p-4 border-2 border-gray-200 dark:border-slate-700 rounded-lg hover:border-transparent hover:shadow-md transition-all text-left relative overflow-hidden"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
@@ -126,7 +131,10 @@ export function HomeTab() {
               </div>
             ))}
           </div>
-          <button className="w-full mt-4 py-2 text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <button
+            onClick={() => onNavigate?.('jobs')}
+            className="w-full mt-4 py-2 text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
             View All Jobs
           </button>
         </div>
@@ -204,7 +212,10 @@ export function HomeTab() {
               </div>
             ))}
           </div>
-          <button className="w-full mt-4 py-2 text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2 group">
+          <button
+            onClick={() => onNavigate?.('notebooks')}
+            className="w-full mt-4 py-2 text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-2 group"
+          >
             Browse All Notebooks
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
