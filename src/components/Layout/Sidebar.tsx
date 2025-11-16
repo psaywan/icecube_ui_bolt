@@ -80,8 +80,8 @@ const menuItems: MenuItem[] = [
     label: 'Notebook',
     icon: BookOpen,
     children: [
-      { label: 'Python Notebook', route: 'notebooks' },
-      { label: 'Python Script', route: 'notebook-script' },
+      { label: 'Notebook', route: 'notebooks' },
+      { label: 'Scripts', route: 'notebook-script' },
       { label: 'Notebook Store', route: 'notebook-store' }
     ]
   },
