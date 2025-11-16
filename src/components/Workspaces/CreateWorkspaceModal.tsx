@@ -40,11 +40,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     region: 'us-east-1',
     vpcCidr: '10.0.0.0/16',
     rootS3Bucket: '',
-    createVpc: true,
-    createSubnets: true,
-    createSecurityGroups: true,
-    enableEfs: false,
-    enableEbs: true,
   });
 
   const [azureConfig, setAzureConfig] = useState({
@@ -52,9 +47,7 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     resourceGroup: '',
     region: 'eastus',
     vnetCidr: '10.0.0.0/16',
-    createVnet: true,
     storageAccountName: '',
-    enableManagedIdentity: true,
   });
 
   const [gcpConfig, setGcpConfig] = useState({
@@ -62,7 +55,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
     region: 'us-central1',
     network: '',
     subnetCidr: '10.0.0.0/16',
-    createNetwork: true,
     gcsBucket: '',
     serviceAccountEmail: '',
   });
@@ -159,27 +151,19 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
       region: 'us-east-1',
       vpcCidr: '10.0.0.0/16',
       rootS3Bucket: '',
-      createVpc: true,
-      createSubnets: true,
-      createSecurityGroups: true,
-      enableEfs: false,
-      enableEbs: true,
     });
     setAzureConfig({
       subscriptionId: '',
       resourceGroup: '',
       region: 'eastus',
       vnetCidr: '10.0.0.0/16',
-      createVnet: true,
       storageAccountName: '',
-      enableManagedIdentity: true,
     });
     setGcpConfig({
       projectId: '',
       region: 'us-central1',
       network: '',
       subnetCidr: '10.0.0.0/16',
-      createNetwork: true,
       gcsBucket: '',
       serviceAccountEmail: '',
     });
@@ -348,56 +332,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
         </p>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-3">Auto-Create Resources</h4>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={awsConfig.createVpc}
-              onChange={(e) => setAwsConfig({ ...awsConfig, createVpc: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Create VPC automatically</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={awsConfig.createSubnets}
-              onChange={(e) => setAwsConfig({ ...awsConfig, createSubnets: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Create Subnets automatically</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={awsConfig.createSecurityGroups}
-              onChange={(e) => setAwsConfig({ ...awsConfig, createSecurityGroups: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Create Security Groups</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={awsConfig.enableEfs}
-              onChange={(e) => setAwsConfig({ ...awsConfig, enableEfs: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Enable EFS</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={awsConfig.enableEbs}
-              onChange={(e) => setAwsConfig({ ...awsConfig, enableEbs: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Enable EBS volumes</span>
-          </label>
-        </div>
-      </div>
     </div>
   );
 
@@ -473,29 +407,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
         />
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-3">Configuration Options</h4>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={azureConfig.createVnet}
-              onChange={(e) => setAzureConfig({ ...azureConfig, createVnet: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Create VNet automatically</span>
-          </label>
-          <label className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={azureConfig.enableManagedIdentity}
-              onChange={(e) => setAzureConfig({ ...azureConfig, enableManagedIdentity: e.target.checked })}
-              className="w-4 h-4 text-cyan-600 rounded"
-            />
-            <span className="text-sm text-gray-700 dark:text-slate-300">Enable Managed Identity</span>
-          </label>
-        </div>
-      </div>
     </div>
   );
 
@@ -583,17 +494,6 @@ export function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: CreateWorks
         />
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <label className="flex items-center space-x-3">
-          <input
-            type="checkbox"
-            checked={gcpConfig.createNetwork}
-            onChange={(e) => setGcpConfig({ ...gcpConfig, createNetwork: e.target.checked })}
-            className="w-4 h-4 text-cyan-600 rounded"
-          />
-          <span className="text-sm text-gray-700 dark:text-slate-300">Create VPC Network automatically</span>
-        </label>
-      </div>
     </div>
   );
 
