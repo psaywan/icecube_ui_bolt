@@ -117,11 +117,11 @@ export function Dashboard() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 overflow-y-auto">
         <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-8 py-4 flex justify-end">
+          <div className="px-8 py-4 flex justify-end">
             <UserProfileDropdown />
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="px-8 py-8">
           {renderContent()}
         </div>
       </main>
