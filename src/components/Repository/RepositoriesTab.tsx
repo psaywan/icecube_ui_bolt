@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, GitBranch, Trash2, Loader2, Github, GitlabIcon as Gitlab, ExternalLink, RefreshCw, Settings } from 'lucide-react';
 import { rdsApi } from '../../lib/rdsApi';
+import { ConnectRepositoryModal } from './ConnectRepositoryModal';
 
 interface Repository {
   id: string;
@@ -16,6 +17,8 @@ interface Repository {
 export function RepositoriesTab() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'github' | 'gitlab' | 'bitbucket' | 'generic'>('github');
 
   useEffect(() => {
     fetchRepositories();
@@ -68,6 +71,11 @@ export function RepositoriesTab() {
     } catch (error) {
       console.error('Error deleting repository:', error);
     }
+  };
+
+  const handleConnectRepo = (provider: 'github' | 'gitlab' | 'bitbucket' | 'generic') => {
+    setSelectedProvider(provider);
+    setModalOpen(true);
   };
 
   const getProviderIcon = (provider: string) => {
@@ -127,7 +135,10 @@ export function RepositoriesTab() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <button className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-gray-900 dark:hover:border-slate-400 transition-all group">
+        <button
+          onClick={() => handleConnectRepo('github')}
+          className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-gray-900 dark:hover:border-slate-400 transition-all group"
+        >
           <div className="flex flex-col items-center space-y-3">
             <div className="w-12 h-12 bg-gray-900 dark:bg-gray-800 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <Github className="w-6 h-6 text-white" />
@@ -139,7 +150,10 @@ export function RepositoriesTab() {
           </div>
         </button>
 
-        <button className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-orange-600 dark:hover:border-orange-500 transition-all group">
+        <button
+          onClick={() => handleConnectRepo('gitlab')}
+          className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-orange-600 dark:hover:border-orange-500 transition-all group"
+        >
           <div className="flex flex-col items-center space-y-3">
             <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <Gitlab className="w-6 h-6 text-white" />
@@ -151,7 +165,10 @@ export function RepositoriesTab() {
           </div>
         </button>
 
-        <button className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-600 dark:hover:border-blue-500 transition-all group">
+        <button
+          onClick={() => handleConnectRepo('bitbucket')}
+          className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-blue-600 dark:hover:border-blue-500 transition-all group"
+        >
           <div className="flex flex-col items-center space-y-3">
             <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <GitBranch className="w-6 h-6 text-white" />
@@ -163,7 +180,10 @@ export function RepositoriesTab() {
           </div>
         </button>
 
-        <button className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-cyan-600 dark:hover:border-cyan-500 transition-all group">
+        <button
+          onClick={() => handleConnectRepo('generic')}
+          className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-md border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-cyan-600 dark:hover:border-cyan-500 transition-all group"
+        >
           <div className="flex flex-col items-center space-y-3">
             <div className="w-12 h-12 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <GitBranch className="w-6 h-6 text-white" />
@@ -256,6 +276,13 @@ export function RepositoriesTab() {
           ))}
         </div>
       )}
+
+      <ConnectRepositoryModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        provider={selectedProvider}
+        onSuccess={fetchRepositories}
+      />
     </div>
   );
 }
