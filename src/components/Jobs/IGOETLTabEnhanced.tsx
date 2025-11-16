@@ -129,7 +129,7 @@ export function IGOETLTab() {
                 <Layout className="w-6 h-6 text-cyan-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Visual Builder</h3>
-              <p className="text-sm text-gray-600">Drag-and-drop workflow canvas like n8n and AWS Glue</p>
+              <p className="text-sm text-gray-600">Drag-and-drop workflow canvas</p>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-md">
