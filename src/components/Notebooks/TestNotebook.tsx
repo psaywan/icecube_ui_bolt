@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Play, Sparkles, Download, CheckCircle, AlertCircle, Loader2, Link, Server } from 'lucide-react';
+import { ArrowLeft, Play, Sparkles, Download, CheckCircle, AlertCircle, Loader2, Link, Server, Plus, Trash2, Code, Database, FileText, ChevronDown } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
 interface Cell {
@@ -159,6 +159,7 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
   const [cells, setCells] = useState<Cell[]>(sampleCells);
   const [executing, setExecuting] = useState<string | null>(null);
   const [clusterConnected] = useState(true);
+  const [showCellTypeMenu, setShowCellTypeMenu] = useState<number | null>(null);
 
   const executeCell = async (cellId: string) => {
     setExecuting(cellId);
@@ -170,6 +171,31 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
         : cell
     ));
     setExecuting(null);
+  };
+
+  const addNewCell = (type: 'code' | 'sql' | 'markdown' = 'code') => {
+    const newCell: Cell = {
+      id: String(cells.length + 1),
+      type,
+      content: type === 'sql'
+        ? '-- Write your SQL query here\nSELECT * FROM table_name LIMIT 10;'
+        : type === 'markdown'
+        ? '# New Section\n\nWrite your markdown here...'
+        : '# Write your Python code here\nimport pandas as pd\n\nprint("Hello World!")',
+    };
+    setCells([...cells, newCell]);
+  };
+
+  const deleteCell = (index: number) => {
+    if (cells.length === 1) return;
+    setCells(cells.filter((_, i) => i !== index));
+  };
+
+  const changeCellType = (index: number, type: 'code' | 'sql' | 'markdown') => {
+    const newCells = [...cells];
+    newCells[index].type = type;
+    newCells[index].output = undefined;
+    setCells(newCells);
   };
 
   return (
@@ -226,40 +252,92 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
             >
               {/* Cell Header */}
               <div className="bg-gray-50 dark:bg-slate-900/50 px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-slate-700">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <span className="text-sm font-mono text-gray-500 dark:text-slate-500">
                     [{index + 1}]
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    cell.type === 'code'
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                      : cell.type === 'sql'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400'
-                  }`}>
-                    {cell.type.toUpperCase()}
-                  </span>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowCellTypeMenu(showCellTypeMenu === index ? null : index)}
+                      className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded transition"
+                    >
+                      {cell.type === 'code' && <Code className="w-3 h-3" />}
+                      {cell.type === 'sql' && <Database className="w-3 h-3" />}
+                      {cell.type === 'markdown' && <FileText className="w-3 h-3" />}
+                      <span>{cell.type.toUpperCase()}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    {showCellTypeMenu === index && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+                        <button
+                          onClick={() => {
+                            changeCellType(index, 'code');
+                            setShowCellTypeMenu(null);
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                        >
+                          <Code className="w-4 h-4" />
+                          <span>Code</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            changeCellType(index, 'sql');
+                            setShowCellTypeMenu(null);
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                        >
+                          <Database className="w-4 h-4" />
+                          <span>SQL</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            changeCellType(index, 'markdown');
+                            setShowCellTypeMenu(null);
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Markdown</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {cell.executed && (
                     <CheckCircle className="w-4 h-4 text-green-500" />
                   )}
                 </div>
-                <button
-                  onClick={() => executeCell(cell.id)}
-                  disabled={executing === cell.id}
-                  className="flex items-center space-x-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition text-xs font-medium disabled:opacity-50"
-                >
-                  {executing === cell.id ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>Running...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3 h-3" />
-                      <span>Run</span>
-                    </>
-                  )}
-                </button>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => executeCell(cell.id)}
+                    disabled={executing === cell.id}
+                    className="flex items-center space-x-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition text-xs font-medium disabled:opacity-50"
+                  >
+                    {executing === cell.id ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Running...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        <span>Run</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => deleteCell(index)}
+                    disabled={cells.length === 1}
+                    className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Delete cell"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
               {/* Cell Content */}
@@ -309,8 +387,17 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
             </div>
           ))}
 
+          {/* Add Cell Button */}
+          <button
+            onClick={() => addNewCell('code')}
+            className="w-full py-4 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-cyan-400 dark:hover:border-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg transition text-gray-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium text-sm flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Cell</span>
+          </button>
+
           {/* Info Box */}
-          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-6">
+          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-6 mt-4">
             <div className="flex items-start space-x-3">
               <Sparkles className="w-6 h-6 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-1" />
               <div>
