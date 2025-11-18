@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileCode, Play, Trash2, Loader2, FolderOpen, GitBranch } from 'lucide-react';
+import { Plus, FileCode, Play, Trash2, Loader2, FolderOpen, GitBranch, Eye } from 'lucide-react';
 import { rdsApi } from '../../lib/rdsApi';
 import { CreateNotebookModal } from './CreateNotebookModal';
 import { NotebookEditor } from './NotebookEditor';
 import { GitImportModal } from './GitImportModal';
+import TestNotebook from './TestNotebook';
 
 interface Notebook {
   id: string;
@@ -21,6 +22,7 @@ export function NotebooksTab() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGitModal, setShowGitModal] = useState(false);
   const [selectedNotebook, setSelectedNotebook] = useState<string | null>(null);
+  const [showTestNotebook, setShowTestNotebook] = useState(false);
 
   useEffect(() => {
     fetchNotebooks();
@@ -78,6 +80,10 @@ export function NotebooksTab() {
     scala: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
     r: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800',
   };
+
+  if (showTestNotebook) {
+    return <TestNotebook onClose={() => setShowTestNotebook(false)} />;
+  }
 
   if (selectedNotebook) {
     return (
@@ -140,6 +146,13 @@ export function NotebooksTab() {
             >
               <Plus className="w-5 h-5" />
               <span>Create Notebook</span>
+            </button>
+            <button
+              onClick={() => setShowTestNotebook(true)}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition shadow-lg"
+            >
+              <Eye className="w-5 h-5" />
+              <span>View Demo Notebook</span>
             </button>
             <button
               onClick={() => setShowGitModal(true)}

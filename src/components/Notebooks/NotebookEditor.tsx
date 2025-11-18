@@ -3,6 +3,7 @@ import { ArrowLeft, Play, Plus, Trash2, Save, Download, Server, ChevronDown, Loa
 import { rdsApi } from '../../lib/rdsApi';
 import NotebookTemplateSelector from './NotebookTemplateSelector';
 import { NotebookBlockTemplate } from './NotebookBlockTemplates';
+import Editor from '@monaco-editor/react';
 
 interface NotebookEditorProps {
   notebookId: string;
@@ -581,33 +582,67 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                   </div>
                 </div>
 
-                <div className="p-3">
-                  <textarea
-                    ref={(el) => {
-                      textAreaRefs.current[cell.id] = el;
-                      if (el) {
-                        el.style.height = 'auto';
-                        el.style.height = Math.max(el.scrollHeight, 80) + 'px';
-                      }
-                    }}
-                    value={cell.content}
-                    onChange={(e) => updateCell(index, e.target.value)}
-                    onKeyDown={async (e) => {
-                      if (cell.type === 'markdown') return;
-
-                      if (e.shiftKey && e.key === 'Enter') {
-                        e.preventDefault();
-                        await executeCell(index);
-                        addCell(index, cell.type);
-                      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                        e.preventDefault();
-                        executeCell(index);
-                      }
-                    }}
-                    placeholder={getPlaceholder(cell)}
-                    className="w-full min-h-[80px] font-mono text-sm bg-transparent border-none outline-none resize-y text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500"
-                    style={{ lineHeight: '1.5', overflow: 'hidden' }}
-                  />
+                <div className="monaco-cell-wrapper">
+                  {cell.type === 'markdown' ? (
+                    <textarea
+                      ref={(el) => {
+                        textAreaRefs.current[cell.id] = el;
+                        if (el) {
+                          el.style.height = 'auto';
+                          el.style.height = Math.max(el.scrollHeight, 80) + 'px';
+                        }
+                      }}
+                      value={cell.content}
+                      onChange={(e) => updateCell(index, e.target.value)}
+                      placeholder="Write markdown..."
+                      className="w-full min-h-[80px] font-mono text-sm bg-transparent border-none outline-none resize-y text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 p-3"
+                      style={{ lineHeight: '1.5', overflow: 'hidden' }}
+                    />
+                  ) : (
+                    <Editor
+                      height={Math.max(cell.content.split('\n').length * 19 + 20, 120)}
+                      defaultLanguage={cell.type === 'sql' ? 'sql' : 'python'}
+                      value={cell.content}
+                      onChange={(value) => updateCell(index, value || '')}
+                      theme="vs-dark"
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        tabSize: 2,
+                        wordWrap: 'on',
+                        formatOnPaste: true,
+                        formatOnType: true,
+                        suggest: {
+                          showKeywords: true,
+                          showSnippets: true,
+                        },
+                        quickSuggestions: {
+                          other: true,
+                          comments: false,
+                          strings: true
+                        },
+                        padding: { top: 10, bottom: 10 },
+                        scrollbar: {
+                          vertical: 'auto',
+                          horizontal: 'auto',
+                          verticalScrollbarSize: 8,
+                          horizontalScrollbarSize: 8
+                        }
+                      }}
+                      onMount={(editor, monaco) => {
+                        editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => {
+                          executeCell(index);
+                          addCell(index, cell.type);
+                        });
+                        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+                          executeCell(index);
+                        });
+                      }}
+                    />
+                  )}
                 </div>
 
                 {cell.executing && (
