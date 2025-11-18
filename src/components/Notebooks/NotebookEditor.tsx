@@ -171,6 +171,12 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
   };
 
   const changeCellType = (index: number, type: 'code' | 'markdown' | 'sql') => {
+    if (type === 'sql' && !notebook?.cluster_id) {
+      alert('⚠️ Please connect to a cluster first to run SQL queries.\n\nClick the "Connect to Cluster" button in the header.');
+      setShowCellTypeMenu(null);
+      return;
+    }
+
     const newCells = [...cells];
     newCells[index].type = type;
     newCells[index].output = undefined;
@@ -191,6 +197,15 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
 
   const executeCell = async (index: number) => {
     if (!notebook) return;
+
+    const cell = cells[index];
+
+    if (cell.type === 'sql' && !notebook.cluster_id) {
+      const newCells = [...cells];
+      newCells[index].error = '⚠️ No cluster connected. Please connect to a cluster to run SQL queries.';
+      setCells(newCells);
+      return;
+    }
 
     const newCells = [...cells];
     newCells[index].executing = true;
@@ -581,6 +596,21 @@ export function NotebookEditor({ notebookId, onClose }: NotebookEditorProps) {
                     </button>
                   </div>
                 </div>
+
+                {cell.type === 'sql' && !notebook?.cluster_id && (
+                  <div className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                    <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Connect to a cluster to execute SQL queries
+                    </span>
+                    <button
+                      onClick={() => setShowClusterMenu(true)}
+                      className="ml-auto text-xs px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded transition"
+                    >
+                      Connect Now
+                    </button>
+                  </div>
+                )}
 
                 <div className="monaco-cell-wrapper">
                   {cell.type === 'markdown' ? (

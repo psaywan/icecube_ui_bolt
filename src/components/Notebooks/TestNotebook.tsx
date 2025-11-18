@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Play, Sparkles, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Play, Sparkles, Download, CheckCircle, AlertCircle, Loader2, Link, Server } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
 interface Cell {
@@ -158,6 +158,7 @@ interface TestNotebookProps {
 export default function TestNotebook({ onClose }: TestNotebookProps) {
   const [cells, setCells] = useState<Cell[]>(sampleCells);
   const [executing, setExecuting] = useState<string | null>(null);
+  const [clusterConnected] = useState(true);
 
   const executeCell = async (cellId: string) => {
     setExecuting(cellId);
@@ -197,6 +198,12 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
           </div>
 
           <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-lg">
+              <Link className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                Demo Cluster Connected
+              </span>
+            </div>
             <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition text-sm font-medium">
               <Sparkles className="w-4 h-4" />
               <span>AI Templates</span>
