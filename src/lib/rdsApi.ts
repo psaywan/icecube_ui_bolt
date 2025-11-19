@@ -33,7 +33,15 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    if (token) {
+      if (headers instanceof Headers) {
+        headers.set('Authorization', `Bearer ${token}`);
+      } else if (Array.isArray(headers)) {
+        headers.push(['Authorization', `Bearer ${token}`]);
+      } else {
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      }
+    }
   }
 
   const response = await fetch(`${API_URL}${url}`, {

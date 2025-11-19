@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://52.66.228.92:8000';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://100.30.101.62:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://100.30.101.62:8000';
 const CALLBACK_API_URL = import.meta.env.VITE_CALLBACK_API_URL;
 const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1';
 
