@@ -199,22 +199,29 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+      </div>
+
+      {/* Header - Glassmorphism */}
+      <div className="relative bg-white/5 backdrop-blur-xl border-b border-white/10 px-6 py-4 shadow-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onClose}
-              className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
+              className="flex items-center space-x-2 px-3 py-2 hover:bg-white/10 rounded-lg transition-all duration-300 group"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-slate-300" />
-              <span className="font-medium text-gray-700 dark:text-slate-300">Back</span>
+              <ArrowLeft className="w-5 h-5 text-cyan-400 group-hover:text-cyan-300 group-hover:-translate-x-1 transition-all" />
+              <span className="font-medium text-cyan-400 group-hover:text-cyan-300">Back</span>
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Data Analysis Demo Notebook</h1>
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-slate-400 mt-0.5">
-                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">Data Analysis Demo Notebook</h1>
+              <div className="flex items-center space-x-2 text-sm text-cyan-300/70 mt-0.5">
+                <span className="px-2 py-0.5 bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-green-300 rounded text-xs font-medium backdrop-blur-sm border border-green-400/20">
                   Python
                 </span>
                 <span className="text-xs">•</span>
@@ -224,17 +231,18 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
           </div>
 
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800 rounded-lg">
-              <Link className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">
+            <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border border-green-400/30 rounded-lg shadow-lg shadow-green-500/20">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+              <Link className="w-4 h-4 text-green-300" />
+              <span className="text-sm font-medium text-green-300">
                 Demo Cluster Connected
               </span>
             </div>
-            <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition text-sm font-medium">
+            <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 rounded-lg transition-all duration-300 text-sm font-medium text-white shadow-lg shadow-cyan-500/50 hover:shadow-cyan-400/60 hover:scale-105">
               <Sparkles className="w-4 h-4" />
               <span>AI Templates</span>
             </button>
-            <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition text-sm font-medium text-gray-700 dark:text-slate-300">
+            <button className="flex items-center space-x-2 px-4 py-2 bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 rounded-lg transition-all duration-300 text-sm font-medium text-cyan-300 hover:text-cyan-200 hover:scale-105">
               <Download className="w-4 h-4" />
               <span>Export</span>
             </button>
@@ -243,24 +251,27 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
       </div>
 
       {/* Cells */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto py-6 px-6 space-y-4">
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto py-6 px-6 space-y-6">
           {cells.map((cell, index) => (
             <div
               key={cell.id}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl hover:shadow-cyan-500/20 transition-all duration-500 hover:scale-[1.01] group"
             >
+              {/* Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
               {/* Cell Header */}
-              <div className="bg-gray-50 dark:bg-slate-900/50 px-4 py-2 flex items-center justify-between border-b border-gray-200 dark:border-slate-700">
+              <div className="relative bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm font-mono text-gray-500 dark:text-slate-500">
+                  <span className="text-sm font-mono text-cyan-400 font-bold">
                     [{index + 1}]
                   </span>
 
                   <div className="relative">
                     <button
                       onClick={() => setShowCellTypeMenu(showCellTypeMenu === index ? null : index)}
-                      className="flex items-center space-x-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 rounded transition"
+                      className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium text-cyan-300 bg-white/10 backdrop-blur-sm border border-cyan-500/30 hover:bg-white/20 hover:border-cyan-400/50 rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/10"
                     >
                       {cell.type === 'code' && <Code className="w-3 h-3" />}
                       {cell.type === 'sql' && <Database className="w-3 h-3" />}
@@ -270,13 +281,13 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                     </button>
 
                     {showCellTypeMenu === index && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+                      <div className="absolute top-full left-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 z-10 min-w-[160px] overflow-hidden">
                         <button
                           onClick={() => {
                             changeCellType(index, 'code');
                             setShowCellTypeMenu(null);
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                          className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-cyan-300 hover:bg-cyan-500/20 hover:text-cyan-200 transition-all duration-200"
                         >
                           <Code className="w-4 h-4" />
                           <span>Code</span>
@@ -286,7 +297,7 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                             changeCellType(index, 'sql');
                             setShowCellTypeMenu(null);
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                          className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-green-300 hover:bg-green-500/20 hover:text-green-200 transition-all duration-200"
                         >
                           <Database className="w-4 h-4" />
                           <span>SQL</span>
@@ -296,7 +307,7 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                             changeCellType(index, 'markdown');
                             setShowCellTypeMenu(null);
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                          className="w-full flex items-center space-x-2 px-4 py-3 text-sm text-purple-300 hover:bg-purple-500/20 hover:text-purple-200 transition-all duration-200"
                         >
                           <FileText className="w-4 h-4" />
                           <span>Markdown</span>
@@ -306,7 +317,7 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                   </div>
 
                   {cell.executed && (
-                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <CheckCircle className="w-4 h-4 text-green-400 animate-pulse" />
                   )}
                 </div>
 
@@ -314,7 +325,7 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                   <button
                     onClick={() => executeCell(cell.id)}
                     disabled={executing === cell.id}
-                    className="flex items-center space-x-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition text-xs font-medium disabled:opacity-50"
+                    className="flex items-center space-x-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-lg transition-all duration-300 text-xs font-medium disabled:opacity-50 shadow-lg shadow-green-500/30 hover:shadow-green-400/40 hover:scale-105"
                   >
                     {executing === cell.id ? (
                       <>
@@ -332,19 +343,19 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
                   <button
                     onClick={() => deleteCell(index)}
                     disabled={cells.length === 1}
-                    className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-500/0 hover:shadow-red-500/20"
                     title="Delete cell"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Cell Content */}
-              <div className="monaco-cell-wrapper">
+              <div className="relative monaco-cell-wrapper">
                 {cell.type === 'markdown' ? (
-                  <div className="p-4 prose dark:prose-invert max-w-none">
-                    <div dangerouslySetInnerHTML={{ __html: cell.content.replace(/\n/g, '<br>').replace(/^# /gm, '<h1 class="text-2xl font-bold mb-2">').replace(/<h1 class="text-2xl font-bold mb-2">([^<]+)<br>/, '<h1 class="text-2xl font-bold mb-4">$1</h1>') }} />
+                  <div className="p-6 prose prose-invert max-w-none">
+                    <div className="text-cyan-100" dangerouslySetInnerHTML={{ __html: cell.content.replace(/\n/g, '<br>').replace(/^# /gm, '<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">').replace(/<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">([^<]+)<br>/, '<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">$1</h1>') }} />
                   </div>
                 ) : (
                   <Editor
@@ -373,12 +384,13 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
 
               {/* Cell Output */}
               {cell.output && (
-                <div className="border-t border-gray-200 dark:border-slate-700">
+                <div className="relative border-t border-white/10">
                   <div className="px-4 py-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-slate-500">OUTPUT</span>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                      <span className="text-xs font-semibold text-cyan-400 tracking-wider">OUTPUT</span>
                     </div>
-                    <pre className="font-mono text-xs bg-gray-900 dark:bg-black text-gray-100 p-3 rounded overflow-x-auto">
+                    <pre className="font-mono text-xs bg-gradient-to-br from-slate-900 to-slate-950 text-green-300 p-4 rounded-xl overflow-x-auto border border-green-500/20 shadow-inner shadow-green-500/10">
 {cell.output}
                     </pre>
                   </div>
@@ -390,24 +402,26 @@ export default function TestNotebook({ onClose }: TestNotebookProps) {
           {/* Add Cell Button */}
           <button
             onClick={() => addNewCell('code')}
-            className="w-full py-4 border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-cyan-400 dark:hover:border-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-lg transition text-gray-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 font-medium text-sm flex items-center justify-center space-x-2"
+            className="relative w-full py-5 border-2 border-dashed border-cyan-500/30 hover:border-cyan-400/60 bg-white/5 hover:bg-cyan-500/10 backdrop-blur-sm rounded-2xl transition-all duration-500 text-cyan-400 hover:text-cyan-300 font-medium text-sm flex items-center justify-center space-x-3 group shadow-lg shadow-cyan-500/0 hover:shadow-cyan-500/20 hover:scale-[1.01]"
           >
-            <Plus className="w-5 h-5" />
-            <span>Add Cell</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/10 to-cyan-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+            <Plus className="w-5 h-5 relative z-10 group-hover:rotate-90 transition-transform duration-300" />
+            <span className="relative z-10">Add Cell</span>
           </button>
 
           {/* Info Box */}
-          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800 rounded-xl p-6 mt-4">
-            <div className="flex items-start space-x-3">
-              <Sparkles className="w-6 h-6 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-1" />
+          <div className="relative bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-cyan-400/30 rounded-2xl p-6 mt-6 shadow-2xl shadow-cyan-500/20 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-purple-500/5 animate-pulse"></div>
+            <div className="relative flex items-start space-x-3">
+              <Sparkles className="w-6 h-6 text-cyan-400 flex-shrink-0 mt-1 animate-pulse" />
               <div>
-                <h3 className="font-semibold text-cyan-900 dark:text-cyan-200 mb-2">
+                <h3 className="font-semibold text-cyan-300 mb-2">
                   Monaco Editor + AI Templates
                 </h3>
-                <p className="text-sm text-cyan-800 dark:text-cyan-300 mb-3">
+                <p className="text-sm text-cyan-300/80 mb-3">
                   This notebook showcases VS Code-style editing with syntax highlighting, autocomplete, and AI-powered code templates.
                 </p>
-                <ul className="text-sm text-cyan-800 dark:text-cyan-300 space-y-1">
+                <ul className="text-sm text-cyan-300/80 space-y-1">
                   <li>✓ Full Python & SQL syntax highlighting</li>
                   <li>✓ IntelliSense autocomplete</li>
                   <li>✓ Keyboard shortcuts (Shift+Enter, Ctrl+Enter)</li>
